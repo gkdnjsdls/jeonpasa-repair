@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전파사 수리대</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: 정전기 방지 매트 위 작업대 — 왼쪽은 접수증과 기판, 오른쪽은 공구·멀티미터·작업 기록 */
+:root{
+  color-scheme: dark;
+  --mat:#15242a; --mat-dot:#21363d; --panel:#1c2f36; --panel-2:#243c44; --line:#35525c;
+  --ink:#e6eee9; --muted:#93aaa6;
+  --copper:#e08a46; --copper-ink:#2a1608;
+  --pcb:#1e6b47; --pcb-deep:#0e3a26; --pcb-edge:#155a3b; --trace:#2f915f; --trace-hi:#8fe8b6;
+  --silk:#eef0e2; --tin:#d4d8db; --tin-dull:#83887f;
+  --meter:#f0c12e; --meter-ink:#2b2205; --lcd:#b8c59e; --lcd-ink:#1d2516;
+  --paper:#efe7d2; --paper-ink:#2a2418; --paper-line:#cdbf9c;
+  --ok:#63d98e; --bad:#ff715f; --warn:#f2c14e;
+  --f-display:'Do Hyeon','IBM Plex Sans KR','Malgun Gothic',sans-serif;
+  --f-body:'IBM Plex Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+  --f-mono:'Share Tech Mono',ui-monospace,Consolas,monospace;
+}
+html,body{background:var(--mat);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.55;
+  background-image:radial-gradient(var(--mat-dot) 1.1px,transparent 1.4px);background-size:18px 18px}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+.app{max-width:1260px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:grid;gap:16px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:38px;height:38px;color:var(--copper)}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:32px;line-height:1;margin:0;letter-spacing:.01em}
+.brand small{display:block;color:var(--muted);font-size:12px;letter-spacing:.08em;margin-top:4px}
+.stats{display:flex;flex-wrap:wrap;gap:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 12px;min-width:96px}
+.stat b{display:block;font-family:var(--f-mono);font-size:20px;font-weight:400;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.stat.money b{color:var(--copper)}
+
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:940px){.bench{grid-template-columns:minmax(0,1fr)}}
+.left,.right{display:grid;gap:14px;min-width:0}
+
+/* ticket */
+.ticket{background:var(--paper);color:var(--paper-ink);border-radius:4px;padding:14px 18px 14px 26px;position:relative;
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 18px;box-shadow:0 2px 0 #0003}
+.ticket::before{content:"";position:absolute;left:8px;top:10px;bottom:10px;width:6px;
+  background:radial-gradient(circle at 3px 3px,var(--mat) 2.6px,transparent 3px) 0 0/6px 12px repeat-y}
+.ticket h2{grid-column:1/-1;margin:0 0 4px;font-family:var(--f-display);font-weight:400;font-size:20px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px dashed var(--paper-line);padding-bottom:6px}
+.ticket h2 span{font-family:var(--f-mono);font-size:14px;opacity:.7}
+.ticket dt{font-size:12px;letter-spacing:.06em;opacity:.65;padding-top:2px}
+.ticket dd{margin:0;font-weight:500;min-width:0}
+.ticket dd.quote{font-family:var(--f-display);font-size:19px;line-height:1.35;font-weight:400}
+
+/* board */
+.boardwrap{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
+#board svg{display:block;width:100%;height:auto;max-width:100%}
+.pcb{fill:var(--pcb)}
+.pcb-edge{fill:none;stroke:var(--pcb-edge);stroke-width:4}
+.hole{fill:var(--mat);stroke:var(--tin);stroke-width:3}
+.silk{fill:var(--silk);font-family:var(--f-mono);font-size:13px}
+.silk.dim{opacity:.55;font-size:11px}
+.tr{cursor:pointer}
+.tr-v{fill:none;stroke:var(--trace);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+.tr-h{fill:none;stroke:transparent;stroke-width:18;stroke-linecap:round;pointer-events:stroke}
+.tr:hover .tr-v,.tr:focus-visible .tr-v{stroke:var(--trace-hi)}
+.tr:focus{outline:none}
+.junc{fill:var(--trace)}
+.crack{fill:none;stroke:var(--pcb-deep);stroke-width:2.6}
+.jumper{fill:none;stroke:var(--copper);stroke-width:3;stroke-linecap:round}
+.lead{fill:none;stroke:#b6babe;stroke-width:2.4;stroke-linecap:round;pointer-events:none}
+.jt{cursor:pointer}
+.jt:focus{outline:none}
+.pad-ring{fill:#c9a35a}
+.pad{fill:var(--tin);transition:stroke .15s}
+.pad.cold{fill:var(--tin-dull)}
+.shine{fill:#fff;opacity:.6;pointer-events:none}
+.jt:hover .pad,.jt:focus-visible .pad{stroke:#fff;stroke-width:2.5}
+.part{cursor:pointer}
+.part:focus{outline:none}
+.part:hover>g,.part:focus-visible>g{filter:drop-shadow(0 0 4px rgba(255,255,255,.7))}
+.glow{opacity:0;transition:opacity .4s}
+.on .glow{opacity:1}
+.blades,.cone{transform-box:fill-box;transform-origin:center}
+.on .blades{animation:spin .35s linear infinite}
+.on .cone{animation:thump .18s ease-in-out infinite alternate}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes thump{to{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.on .blades,.on .cone{animation:none}}
+.tool-inspect #board svg{cursor:zoom-in}
+.boardfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 4px 2px}
+#hint{color:var(--muted);font-size:13px;min-width:0;flex:1 1 220px}
+.power{display:inline-flex;align-items:center;gap:10px;background:#b8321f;border:0;border-radius:6px;padding:10px 18px;font-weight:700;color:#fff;
+  box-shadow:inset 0 -3px 0 #0004}
+.power:hover{background:#cf3b25}
+.power:disabled{opacity:.5;cursor:default}
+.power.pulse{animation:btnp .8s ease-in-out infinite alternate}
+@keyframes btnp{from{box-shadow:0 0 0 2px #ffd84a}to{box-shadow:0 0 0 6px #ffd84a55}}
+.power svg{width:18px;height:18px}
+.testout{border-radius:6px;padding:10px 14px;border:1px solid var(--line);background:var(--panel-2);display:grid;gap:2px;font-size:14px}
+.testout b{font-size:11px;letter-spacing:.1em;color:var(--muted);font-weight:500}
+.testout.bad{border-color:var(--bad)}
+.testout.bad p{color:#ffd2ca}
+.testout.ok{border-color:var(--ok)}
+.testout p{margin:0}
+
+/* tools */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+.panel h3{margin:0 0 10px;font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:500}
+.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tool{display:grid;justify-items:center;gap:4px;background:var(--panel-2);border:1.5px solid transparent;border-radius:6px;padding:9px 4px 7px;font-size:12.5px;position:relative}
+.tool svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tool kbd{position:absolute;top:3px;right:5px;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.tool[aria-pressed="true"]{border-color:var(--copper);color:var(--copper);background:#2f2a22}
+.tooltip{margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+
+/* meter */
+.meter{background:var(--meter);color:var(--meter-ink);border-radius:14px;padding:12px;display:grid;gap:10px;box-shadow:inset 0 -4px 0 #0003}
+.meter-top{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-mono);font-size:13px}
+.meter-top b{font-weight:400;letter-spacing:.1em}
+.lcd{background:var(--lcd);color:var(--lcd-ink);border-radius:6px;padding:8px 12px;box-shadow:inset 0 2px 6px #0004;display:grid;gap:2px;min-height:104px}
+.lcd-mode{font-family:var(--f-mono);font-size:12px;display:flex;justify-content:space-between}
+.lcd-val{font-family:var(--f-mono);font-size:44px;line-height:1;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lcd-val small{font-size:20px;margin-left:6px}
+.lcd-note{font-size:12px;min-height:18px}
+.dial{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.dial button{background:#2a2510;color:#f0e4b0;border:0;border-radius:5px;padding:7px 2px;font-size:12px;line-height:1.2}
+.dial button span{display:block;font-family:var(--f-mono);font-size:16px}
+.dial button[aria-checked="true"]{background:var(--meter-ink);color:var(--meter);box-shadow:0 0 0 2px var(--meter-ink),0 0 0 4px #fff8}
+
+/* log */
+.log{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:260px;overflow:auto;font-size:13px}
+.log li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;padding-bottom:6px;border-bottom:1px solid #ffffff10}
+.log time{font-family:var(--f-mono);color:var(--muted);font-size:12px}
+.log .ok{color:var(--ok)} .log .bad{color:var(--bad)} .log .meter-l{color:var(--meter)}
+details.help{font-size:13px}
+details.help summary{cursor:pointer;color:var(--ink);font-weight:500}
+.cc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;margin:10px 0}
+.cc div{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.sw{width:14px;height:14px;border-radius:3px;border:1px solid #fff3;flex:none}
+.help ul{padding-left:18px;margin:8px 0;color:var(--muted)}
+.help li{margin-bottom:4px}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-size:13px}
+
+/* modals */
+.scrim{position:fixed;inset:0;background:#081014cc;display:grid;place-items:center;padding:16px;z-index:10}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;width:min(460px,100%);display:grid;gap:12px;max-height:100%;overflow:auto}
+.sheet h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:24px}
+.sheet p{margin:0}
+.sub{color:var(--muted);font-size:13.5px}
+.sd-art{width:100%;height:auto;background:var(--pcb);border-radius:6px}
+.heat{position:relative;height:18px;border-radius:9px;background:#0c1a1f;overflow:hidden;border:1px solid var(--line)}
+.zone{position:absolute;top:0;bottom:0;background:#63d98e55;border-left:2px solid var(--ok);border-right:2px solid var(--ok)}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#4f6b75,#e8a04c 70%,#ff5a3c)}
+.sd-msg{min-height:44px;font-size:14px}
+.sd-msg.bad{color:var(--bad)} .sd-msg.ok{color:var(--ok)}
+.row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.hold{background:var(--copper);color:var(--copper-ink);border:0;border-radius:6px;padding:12px 18px;font-weight:700;user-select:none;-webkit-user-select:none;touch-action:none}
+.hold.active{background:#ffb070}
+.smoke{opacity:0;transition:opacity .2s}
+.smoke.on{opacity:.8}
+.opts{display:grid;gap:6px}
+.opt{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:9px 12px}
+.opt:hover{border-color:var(--copper)}
+.opt b{font-weight:700}
+.opt small{display:block;color:var(--muted);font-size:12px}
+.opt .price{font-family:var(--f-mono);color:var(--copper)}
+.res-lines{display:grid;gap:4px;font-variant-numeric:tabular-nums}
+.res-lines div{display:flex;justify-content:space-between;gap:12px}
+.res-lines .tot{border-top:1px solid var(--line);padding-top:6px;font-weight:700}
+.stars{font-size:28px;letter-spacing:4px;color:var(--meter)}
+.stars i{font-style:normal;color:#ffffff22}
+.causes{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px}
+.coach{background:#2b2a1c;border:1.5px solid var(--meter);border-radius:8px;padding:12px 16px;display:grid;gap:4px}
+.coach b{font-size:11px;letter-spacing:.12em;color:var(--meter);font-weight:500}
+.coach p{margin:0;font-size:15px;line-height:1.6;max-width:70ch}
+.hl{fill:none;stroke:#ffd84a;stroke-width:3;stroke-dasharray:6 5;pointer-events:none;animation:hlp .8s ease-in-out infinite alternate}
+@keyframes hlp{to{stroke-opacity:.3}}
+.footbtns{display:flex;gap:8px;flex-wrap:wrap}
+.easy{display:flex;align-items:center;gap:5px;cursor:pointer}
+.verdict{border-radius:6px;padding:7px 10px;font-size:13.5px;font-weight:700;background:#2a2510;color:#f0e4b0}
+.verdict.ok{background:#1f4a30;color:#c8f5d8}
+.verdict.bad{background:#6a1d14;color:#ffd9d2}
+.primary{background:var(--copper);color:var(--copper-ink);border:0;border-radius:6px;padding:11px 18px;font-weight:700}
+[hidden]{display:none!important}
+body{margin:0}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 35l7-7"/><path d="M12 28l4-4 5 5-4 4z"/><path d="M19 22l11-11a3 3 0 014 4L23 26"/><path d="M6 20c2-3 0-5 2-8M11 17c2-3 0-5 2-8" opacity=".6"/>
+      </svg>
+      <div><h1>전파사 수리대</h1><small>고장 원인을 찾아 납땜하고 부품을 갈아 끼우세요</small></div>
+    </div>
+    <div class="stats">
+      <div class="stat money"><span>잔고</span><b id="money">₩0</b></div>
+      <div class="stat"><span>완료한 수리</span><b id="done">0</b></div>
+      <div class="stat"><span>작업 시간</span><b id="time">00:00</b></div>
+    </div>
+  </header>
+
+  <div class="bench">
+    <section class="left">
+      <div class="ticket" id="ticket"></div>
+      <div class="coach" id="coach" hidden></div>
+      <div class="boardwrap">
+        <div id="board"></div>
+        <div class="boardfoot">
+          <p id="hint">기판 위 부품, 납땜 패드, 패턴을 눌러 보세요.</p>
+          <div class="footbtns">
+          <button class="ghost" id="hintBtn" type="button">힌트 (₩500) <kbd style="font-family:var(--f-mono);opacity:.7">H</kbd></button>
+          <button class="power" id="power" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 7.3a8 8 0 1011.4 0"/></svg>
+            전원 넣고 테스트 <kbd style="font-family:var(--f-mono);opacity:.7">P</kbd>
+          </button>
+          </div>
+        </div>
+      </div>
+      <div class="testout" id="testout"><b>테스트 결과</b><p>아직 전원을 넣어 보지 않았다.</p></div>
+    </section>
+
+    <aside class="right">
+      <div class="panel">
+        <h3>공구</h3>
+        <div class="tools" id="tools">
+          <button class="tool" type="button" data-tool="inspect" aria-pressed="true"><kbd>1</kbd>
+            <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L20 20"/></svg>돋보기</button>
+          <button class="tool" type="button" data-tool="meter" aria-pressed="false"><kbd>2</kbd>
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><rect x="8" y="5" width="8" height="5" rx="1"/><circle cx="12" cy="16" r="2.5"/></svg>멀티미터</button>
+          <button class="tool" type="button" data-tool="iron" aria-pressed="false"><kbd>3</kbd>
+            <svg viewBox="0 0 24 24"><path d="M2 22l5-5"/><path d="M7 17l3-3 4 4-3 3z"/><path d="M12 12l6-6a2.1 2.1 0 013 3l-6 6"/></svg>인두</button>
+          <button class="tool" type="button" data-tool="replace" aria-pressed="false"><kbd>4</kbd>
+            <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>부품 교체</button>
+        </div>
+        <p class="tooltip" id="tooltip"></p>
+      </div>
+
+      <div class="meter" aria-label="디지털 멀티미터">
+        <div class="meter-top"><b>DMM-27</b><span id="probe">프로브 대기 중</span><label class="easy"><input type="checkbox" id="easy" checked> 판정 도움</label></div>
+        <div class="lcd" aria-live="polite">
+          <div class="lcd-mode"><span id="lcdMode">저항 Ω</span><span id="lcdBeep"></span></div>
+          <div class="lcd-val"><span id="lcdVal">0L</span><small id="lcdUnit">Ω</small></div>
+          <div class="lcd-note" id="lcdNote">멀티미터를 고르고 기판을 찍어 측정하세요.</div>
+        </div>
+        <div class="dial" role="radiogroup" aria-label="측정 모드" id="dial">
+          <button type="button" role="radio" data-mode="ohm" aria-checked="true"><span>Ω</span>저항</button>
+          <button type="button" role="radio" data-mode="cont" aria-checked="false"><span>•)))</span>통전</button>
+          <button type="button" role="radio" data-mode="diode" aria-checked="false"><span>→|</span>다이오드</button>
+          <button type="button" role="radio" data-mode="cap" aria-checked="false"><span>⊣⊢</span>용량</button>
+        </div>
+        <div class="verdict" id="verdict" hidden></div>
+      </div>
+
+      <div class="panel">
+        <h3>작업 기록</h3>
+        <ul class="log" id="log"></ul>
+      </div>
+
+      <div class="panel">
+        <details class="help">
+          <summary>수리 요령과 저항 색띠표</summary>
+          <ul>
+            <li><b>퓨즈가 끊어졌다면</b> 왜 끊어졌는지부터 찾으세요. 다이오드·트랜지스터·캐패시터 단락이 흔한 원인입니다.</li>
+            <li><b>냉납</b>과 <b>패턴 균열</b>은 돋보기로 그 지점을 직접 봐야 보입니다. 통전 모드에서 삑 소리가 안 나면 의심하세요.</li>
+            <li>저항은 색띠 1·2번이 숫자, 3번이 곱할 0의 개수입니다. 노랑·보라·갈색 = 47 × 10 = 470Ω.</li>
+            <li>쓸데없이 멀쩡한 부품을 갈면 별점이 깎입니다.</li>
+          </ul>
+          <div class="cc" id="cc"></div>
+          <button class="ghost" type="button" id="reset">가게 처음부터 다시 시작 (따라 하기 포함)</button>
+        </details>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="scrim" id="solder" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sdTitle">
+    <h3 id="sdTitle">납땜</h3>
+    <p class="sub" id="sdSub"></p>
+    <svg class="sd-art" viewBox="0 0 300 110" aria-hidden="true">
+      <rect x="0" y="78" width="300" height="32" fill="#0e3a26"/>
+      <rect x="110" y="72" width="80" height="10" rx="3" fill="#c9a35a"/>
+      <rect x="146" y="20" width="8" height="62" fill="#b6babe"/>
+      <ellipse id="sdBlob" cx="150" cy="74" rx="8" ry="4" fill="#d4d8db"/>
+      <g class="smoke" id="sdSmoke" fill="none" stroke="#e6eee9" stroke-width="2" stroke-linecap="round">
+        <path d="M178 50c-6-8 6-12 0-20s6-12 0-18"/><path d="M190 54c-6-8 6-12 0-20"/>
+      </g>
+      <path d="M168 70L210 40 290 4 296 14 216 50z" fill="#9aa1a6"/>
+      <path d="M168 70L176 58 186 64z" fill="#e08a46"/>
+      <path d="M118 66l26-30" stroke="#cfd3d6" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="heat"><div class="zone" id="sdZone"></div><div class="fill" id="sdFill"></div></div>
+    <p class="sd-msg" id="sdMsg"></p>
+    <div class="row">
+      <button class="ghost" type="button" id="sdCancel">취소</button>
+      <button class="hold" type="button" id="sdHold">누르고 있기 · Space</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="drawer" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dwTitle">
+    <h3 id="dwTitle">부품함</h3>
+    <p class="sub" id="dwSub"></p>
+    <div class="opts" id="dwList"></div>
+    <div class="row"><button class="ghost" type="button" id="dwCancel">닫기</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="result" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
+    <h3 id="rsTitle">수리 완료</h3>
+    <div id="rsBody"></div>
+    <div class="row"><button class="primary" type="button" id="rsNext">다음 손님 받기</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const won=n=>(n<0?'-':'')+'₩'+Math.abs(Math.round(n)).toLocaleString('ko-KR');
+const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+const COLORS=[['검정','#1a1a1a'],['갈색','#7a4a22'],['빨강','#d0302a'],['주황','#ef7d22'],['노랑','#f2d23a'],['초록','#2f9a4a'],['파랑','#2f62c9'],['보라','#7d4bb8'],['회색','#8a8a8a'],['흰색','#f4f4f4']];
+const RVALS=[10,47,100,220,470,1000,4700,10000];
+const CVALS=[10,47,100,470,1000];
+const rLabel=v=>v>=1000?(v/1000)+'kΩ':v+'Ω';
+function bands(v){let n=v,e=0;while(n>=100){n/=10;e++;}n=Math.round(n);return [Math.floor(n/10),n%10,e];}
+const bandNames=v=>bands(v).map(i=>COLORS[i][0]).join('·')+'·금';
+function fmtOhm(r){if(r>=1e6)return[(r/1e6).toFixed(2),'MΩ'];if(r>=1000)return[(r/1000).toFixed(r>=10000?1:2),'kΩ'];return[r<10?r.toFixed(2):r<100?r.toFixed(1):r.toFixed(0),'Ω'];}
+
+const TYPES={
+  resistor:{n:'저항',pads:{a:[-30,0],b:[30,0]},price:50,faults:['open','burnt'],sz:12,stock:'1/4W 탄소피막 저항'},
+  fuse:{n:'퓨즈',pads:{a:[-34,0],b:[34,0]},price:500,faults:['open'],sz:12,stock:'유리관 퓨즈 1A 250V'},
+  switch:{n:'스위치',pads:{a:[-24,0],b:[24,0]},price:800,faults:['open'],sz:17,stock:'택트 스위치 12mm'},
+  led:{n:'LED',pads:{a:[-20,0],b:[20,0]},price:200,faults:['open'],sz:14,stock:'5mm LED'},
+  diode:{n:'다이오드',pads:{a:[-28,0],b:[28,0]},price:100,faults:['short'],sz:9,stock:'1N4001 정류 다이오드'},
+  cap:{n:'전해 캐패시터',pads:{a:[-26,0],b:[26,0]},price:300,faults:['dry','short'],sz:19,stock:'전해 캐패시터 16V'},
+  transistor:{n:'트랜지스터',pads:{e:[-16,-10],b:[0,-10],c:[16,-10]},price:400,faults:['short'],sz:0,stock:'2N3904 NPN 트랜지스터'},
+  motor:{n:'DC 모터',pads:{a:[-42,0],b:[42,0]},price:4500,faults:['open'],sz:33,stock:'130형 DC 모터'},
+  speaker:{n:'스피커',pads:{a:[-44,0],b:[44,0]},price:3000,faults:['open'],sz:37,stock:'8Ω 0.5W 스피커'},
+  battery:{n:'배터리 홀더',pads:{a:[-52,0],b:[52,0]},price:0,faults:[],sz:19},
+  jack:{n:'DC 잭',pads:{a:[-52,0],b:[52,0]},price:0,faults:[],sz:20},
+};
+
+const GENERIC_SYM={
+  dead:'전원을 넣어도 전혀 반응이 없다.',
+  short:'퍽! 퓨즈가 끊어졌다. 회로 어딘가에 단락(쇼트)이 남아 있다.',
+  flicker:'켜졌다 꺼졌다를 반복한다. 어딘가 접촉이 불안정하다.',
+  ind:'본체는 동작하지만 전원 표시등이 켜지지 않는다.',
+  ind_dim:'전원 표시등이 거의 안 보일 만큼 어둡다.',
+  odd:'동작은 하는데 정상과 다르다. 부품 값이 맞지 않는 것 같다.',
+};
+const GENERIC_CMP={
+  dead:'전원이 아예 안 들어와요.',
+  shortStory:'켜자마자 "퍽" 소리가 나더니 그 뒤로는 아예 안 켜져요.',
+  flicker:'되다 안 되다 해요. 손으로 툭 치면 켜질 때도 있고요.',
+  ind:'쓰는 데는 문제없는데 전원 불이 안 들어와요.',
+  ind_dim:'전원 불이 너무 어두워서 켜진 건지 모르겠어요.',
+  odd:'어딘가 예전 같지 않아요.',
+};
+
+const DEVICES=[
+  {id:'flash',name:'LED 손전등',code:'FL-2 REV.A',fee:12000,ok:'손전등이 환하게 켜졌다!',
+   sym:{weak:'LED가 겨우 보일 만큼 희미하다.'},
+   cmp:{weak:'불빛이 너무 약해요. 건전지를 새로 넣어도 똑같아요.'},
+   parts:[
+     {id:'BT1',type:'battery',x:110,y:200,rot:90},
+     {id:'SW1',type:'switch',x:240,y:90,rot:0},
+     {id:'R1',type:'resistor',x:400,y:90,rot:0,value:47},
+     {id:'D1',type:'led',x:530,y:200,rot:90,color:'white'},
+   ],
+   traces:[
+     {from:'BT1.a',via:[[110,90]],to:'SW1.a'},
+     {from:'SW1.b',to:'R1.a'},
+     {from:'R1.b',via:[[530,90]],to:'D1.a'},
+     {from:'D1.b',via:[[530,320],[110,320]],to:'BT1.b'},
+   ]},
+  {id:'fan',name:'탁상용 미니 선풍기',code:'FAN-C3 REV.B',fee:15000,ok:'날개가 시원하게 돌아간다!',
+   sym:{dead_out:'전원 표시등은 켜지는데 모터가 돌지 않는다.',noisy:'모터가 덜덜 떨리며 속도가 들쭉날쭉하다.'},
+   cmp:{dead_out:'불은 들어오는데 날개가 안 돌아요.',noisy:'돌긴 하는데 덜덜거리고 속도가 들쭉날쭉해요.'},
+   parts:[
+     {id:'J1',type:'jack',x:100,y:200,rot:90},
+     {id:'F1',type:'fuse',x:210,y:80,rot:0},
+     {id:'D1',type:'diode',x:340,y:80,rot:0},
+     {id:'SW1',type:'switch',x:470,y:80,rot:0,oc:'dead_out'},
+     {id:'M1',type:'motor',x:560,y:200,rot:90,oc:'dead_out'},
+     {id:'C1',type:'cap',x:400,y:200,rot:90,value:470},
+     {id:'R1',type:'resistor',x:270,y:200,rot:90,value:1000,role:'ind'},
+     {id:'LED1',type:'led',x:270,y:280,rot:90,role:'ind',color:'red'},
+   ],
+   traces:[
+     {from:'J1.a',via:[[100,80]],to:'F1.a'},
+     {from:'F1.b',to:'D1.a'},
+     {from:'D1.b',to:'SW1.a'},
+     {from:'SW1.b',via:[[560,80]],to:'M1.a',oc:'dead_out'},
+     {from:'M1.b',via:[[560,330],[100,330]],to:'J1.b'},
+     {from:'R1.a',to:[270,80],role:'ind'},
+     {from:'R1.b',to:'LED1.a',role:'ind'},
+     {from:'LED1.b',to:[270,330],role:'ind'},
+     {from:'C1.a',to:[400,80]},
+     {from:'C1.b',to:[400,330]},
+   ]},
+  {id:'amp',name:'휴대용 앰프 스피커',code:'AMP-1 REV.C',fee:18000,ok:'스피커에서 깨끗한 소리가 난다!',
+   sym:{dead_out:'표시등은 켜지는데 스피커가 조용하다.',weak:'소리가 아주 작고 찌그러진다.',noisy:'"웅—" 하는 험 노이즈가 섞인다.'},
+   cmp:{dead_out:'불은 켜지는데 소리가 하나도 안 나요.',weak:'소리가 작고 지지직거려요.',noisy:'계속 웅— 하는 소리가 나요.'},
+   parts:[
+     {id:'BT1',type:'battery',x:90,y:200,rot:90},
+     {id:'F1',type:'fuse',x:170,y:70,rot:0},
+     {id:'SW1',type:'switch',x:270,y:70,rot:0},
+     {id:'R2',type:'resistor',x:330,y:170,rot:90,value:1000,role:'ind'},
+     {id:'D2',type:'led',x:330,y:260,rot:90,role:'ind',color:'red'},
+     {id:'C1',type:'cap',x:390,y:170,rot:90,value:100},
+     {id:'R1',type:'resistor',x:460,y:150,rot:90,value:10000,oc:'dead_out'},
+     {id:'Q1',type:'transistor',x:460,y:240,rot:0},
+     {id:'LS1',type:'speaker',x:560,y:186,rot:90,oc:'dead_out'},
+   ],
+   traces:[
+     {from:'BT1.a',via:[[90,70]],to:'F1.a'},
+     {from:'F1.b',to:'SW1.a'},
+     {from:'SW1.b',via:[[560,70]],to:'LS1.a'},
+     {from:'R2.a',to:[330,70],role:'ind'},
+     {from:'R2.b',to:'D2.a',role:'ind'},
+     {from:'D2.b',to:[330,340],role:'ind'},
+     {from:'C1.a',to:[390,70]},
+     {from:'C1.b',to:[390,340]},
+     {from:'R1.a',to:[460,70],oc:'dead_out'},
+     {from:'R1.b',to:'Q1.b',oc:'dead_out'},
+     {from:'LS1.b',to:'Q1.c',oc:'dead_out'},
+     {from:'Q1.e',via:[[420,230]],to:[420,340],oc:'dead_out'},
+     {from:'BT1.b',via:[[90,340]],to:[420,340]},
+   ]},
+];
+
+/* ---------- state ---------- */
+const SAVE_KEY='jeonpasa-v2';
+const S={money:20000,jobNo:1,done:0,tool:'inspect',mode:'ohm',job:null,busy:false,easy:true,seen:[]};
+try{const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(d){S.money=d.money;S.jobNo=d.jobNo;S.done=d.done;S.easy=d.easy!==false;S.seen=d.seen||[];}}catch(e){}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({money:S.money,jobNo:S.jobNo,done:S.done,easy:S.easy,seen:S.seen}));}catch(e){}}
+
+const LESSON={
+  open:'단선: 부품 속이 끊어져 전기가 흐르지 않는 고장입니다. 겉은 멀쩡해 보여서 멀티미터로 재 봐야 찾을 수 있어요. 끊어진 부품을 재면 0L이 뜹니다.',
+  burnt:'탄 저항: 몸체가 그을려 있고 저항값이 정상보다 훨씬 커집니다. 색띠를 읽어 같은 값으로 갈아 주세요.',
+  short:'단락(쇼트): 부품 속이 붙어 버려 전기가 그냥 새어 나가고, 그래서 퓨즈가 끊어집니다. 퓨즈만 갈면 또 끊어지니까, 다이오드 모드에서 0.00이 뜨는 범인부터 찾으세요.',
+  dry:'마른 캐패시터: 윗면이 볼록 부풀어 있고, 용량 모드로 재면 표기보다 훨씬 작게 나옵니다. 같은 용량으로 갈아 주세요.',
+  cold:'냉납: 납이 덜 녹은 채 굳어서 접촉이 불안한 고장입니다. 켜졌다 꺼졌다 해요. 돋보기로 패드를 하나씩 보면 회색으로 탁한 곳이 있습니다. 인두로 다시 땜하면 끝.',
+  crack:'패턴 균열: 기판의 초록 선(패턴)에 금이 가서 전기가 끊깁니다. 통전 모드로 패턴을 눌러 삑 소리가 안 나는 곳을 찾고, 인두로 점퍼선을 다세요.',
+};
+const TUT=[
+  {t:'첫 손님이에요! 손님 말만 믿지 말고 먼저 [전원 넣고 테스트]를 눌러 증상을 직접 확인해 보세요.',hl:'BTN',done:e=>e.type==='test'},
+  {t:'LED가 희미하네요. 전기가 LED까지 제대로 못 가고 있다는 뜻이에요. 오른쪽 공구에서 [돋보기]를 고르고, 노란 점선으로 표시한 R1 저항을 눌러 보세요.',hl:'P:R1',done:e=>e.type==='inspect'&&e.key==='P:R1'},
+  {t:'몸체가 그을렸어요. 색띠 노랑·보라·검정은 4, 7, 그리고 0을 0개 붙인다는 뜻이라 47Ω입니다. 정말 고장인지 재 봅시다. [멀티미터]를 고르고, 모드는 [Ω 저항]인 채로 R1을 누르세요.',hl:'P:R1',done:e=>e.type==='meter'&&e.key==='P:R1'&&S.mode==='ohm'},
+  {t:'47Ω이어야 하는데 수백 Ω이 나오죠? 저항이 타서 값이 커진 거예요. [부품 교체]를 고르고 R1을 눌러 47Ω짜리를 고르세요. 납땜은 버튼을 누르고 있다가 게이지가 초록 구간에 오면 손을 떼면 됩니다.',hl:'P:R1',done:e=>e.type==='replace'&&e.ok},
+  {t:'잘했어요! 다시 [전원 넣고 테스트]를 눌러 확인해 보세요.',hl:'BTN',done:e=>e.type==='test'},
+];
+
+function padXY(p,pn){const o=TYPES[p.type].pads[pn];return p.rot===90?[p.x-o[1],p.y+o[0]]:[p.x+o[0],p.y+o[1]];}
+
+function buildJob(){
+  const dev=DEVICES[(S.jobNo-1)%DEVICES.length];
+  const J={dev,parts:{},joints:{},traces:[],start:Date.now(),spent:0,penalty:0,wasted:0,blows:0,done:false,running:false,causes:[],last:null,tut:null,tutMsg:null,lesson:null,hl:null,hintKey:null,hintLv:0,hintCost:0};
+  dev.parts.forEach(d=>{
+    J.parts[d.id]={...d,fault:null,val:d.value};
+    Object.keys(TYPES[d.type].pads).forEach(pn=>{
+      const id=d.id+'-'+pn;J.joints[id]={id,part:d.id,pad:pn,cold:false,seen:false,fresh:false,role:d.role||'main'};
+    });
+  });
+  const pt=r=>{if(Array.isArray(r))return r;const[a,b]=r.split('.');return padXY(J.parts[a],b);};
+  dev.traces.forEach((t,i)=>{
+    const pts=[pt(t.from),...(t.via||[]),pt(t.to)];
+    let best=0,bi=0;for(let k=0;k<pts.length-1;k++){const L=Math.hypot(pts[k+1][0]-pts[k][0],pts[k+1][1]-pts[k][1]);if(L>best){best=L;bi=k;}}
+    const A=pts[bi],B=pts[bi+1],f=rnd(.35,.65);
+    J.traces.push({id:'T'+(i+1),pts,role:t.role||'main',oc:t.oc,free:Array.isArray(t.to)?t.to:null,
+      cracked:false,seen:false,jumper:false,crack:[A[0]+(B[0]-A[0])*f,A[1]+(B[1]-A[1])*f],horiz:A[1]===B[1]});
+  });
+  const fuse=Object.values(J.parts).find(p=>p.type==='fuse');
+  const used=new Set();let guard=0;
+  if(S.jobNo===1){
+    const r=J.parts.R1;r.fault='burnt';r.drift=9;used.add('R1');
+    J.causes.push('R1 저항 — 과열로 저항값이 크게 올라감');J.tut=0;
+    J.fee=dev.fee;J.customer='첫 손님, 박 사장님';J.complaint=dev.cmp.weak;markSeen(J);
+    return J;
+  }
+  const n=S.jobNo<=5?1:S.jobNo<=10?2:3;
+  const forced=S.jobNo===4?['joint']:S.jobNo===5?['trace']:[];
+  const pool=S.jobNo<=3?['part']:['part','part','part','joint','trace'];
+  while(used.size<n&&guard++<200){
+    const kind=forced.length?forced.shift():pick(pool);
+    if(kind==='part'){
+      const p=pick(Object.values(J.parts).filter(p=>TYPES[p.type].faults.length));
+      if(used.has(p.id))continue;
+      const f=pick(TYPES[p.type].faults);
+      p.fault=f;used.add(p.id);
+      if(f==='burnt')p.drift=rnd(6,14);
+      if(f==='dry')p.dryK=rnd(.05,.14);
+      J.causes.push(`${p.id} ${TYPES[p.type].n} — ${{open:'단선',burnt:'과열로 저항값이 크게 올라감',short:'내부 단락',dry:'전해액이 말라 용량 감소'}[f]}`);
+      if(f==='short'&&fuse&&fuse.fault!=='open'){fuse.fault='open';J.shortStory=true;J.causes.push(`${fuse.id} 퓨즈 — ${p.id} 단락 때문에 끊어짐`);used.add(fuse.id);}
+    }else if(kind==='joint'){
+      const j=pick(Object.values(J.joints));if(used.has(j.id))continue;
+      j.cold=true;used.add(j.id);J.causes.push(`${j.part}의 ${j.pad.toUpperCase()} 다리 — 냉납`);
+    }else{
+      const t=pick(J.traces);if(used.has(t.id))continue;
+      t.cracked=true;used.add(t.id);J.causes.push(`패턴 ${t.id} — 균열`);
+    }
+  }
+  J.fee=dev.fee+(used.size-1)*6000;
+  J.customer=pick(['박 사장님','동네 초등학생','윗집 할머니','편의점 알바생','캠핑 동호회 회원','택배 기사님','미술학원 선생님','단골 대학생']);
+  const cats=categories(J,true);
+  J.complaint=J.shortStory?GENERIC_CMP.shortStory:cats.slice(0,2).map(c=>dev.cmp[c]||GENERIC_CMP[c]||GENERIC_CMP.dead).join(' ');
+  markSeen(J);
+  return J;
+}
+function markSeen(J){
+  const kinds=[...new Set(faultsOf(J).map(f=>f.kind))].sort((a,b)=>(b==='short')-(a==='short'));
+  const fresh=kinds.find(k=>!S.seen.includes(k));
+  kinds.forEach(k=>{if(!S.seen.includes(k))S.seen.push(k);});
+  if(fresh&&J.tut==null)J.lesson=LESSON[fresh];
+  save();
+}
+
+function faultsOf(J){
+  const L=[];
+  Object.values(J.parts).forEach(p=>{if(p.fault)L.push({kind:p.fault,role:p.role||'main',oc:p.oc,part:p,o:p,key:'P:'+p.id});});
+  Object.values(J.joints).forEach(j=>{if(j.cold)L.push({kind:'cold',role:j.role,o:j,key:'J:'+j.id});});
+  J.traces.forEach(t=>{if(t.cracked&&!t.jumper)L.push({kind:'crack',role:t.role,oc:t.oc,o:t,key:'T:'+t.id});});
+  return L;
+}
+function catOf(f){
+  switch(f.kind){
+    case 'open':return f.role==='ind'?'ind':(f.oc||'dead');
+    case 'burnt':return f.role==='ind'?'ind_dim':(f.oc==='dead_out'?'weak':'weak');
+    case 'short':return 'dead';
+    case 'dry':return 'noisy';
+    case 'cold':return f.role==='ind'?'ind':'flicker';
+    case 'crack':return f.role==='ind'?'ind':(f.oc||'dead');
+    case 'wrong':return 'odd';
+  }
+}
+const ORDER=['dead','dead_out','flicker','weak','noisy','odd','ind','ind_dim'];
+function categories(J){
+  const c=[...new Set(faultsOf(J).map(catOf))].sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b));
+  return c.includes('dead')?['dead']:c;
+}
+
+/* ---------- rendering ---------- */
+function body(p){
+  const f=p.fault;
+  switch(p.type){
+    case 'resistor':{const b=bands(p.val),burnt=f==='burnt';
+      return (burnt?'<ellipse rx="27" ry="16" fill="#2a1606" opacity=".55"/>':'')+
+        `<rect x="-18" y="-7" width="36" height="14" rx="6" fill="${burnt?'#6b4a2c':'#dcc79b'}"/>`+
+        [-11,-5,1].map((x,i)=>`<rect x="${x}" y="-7" width="3.6" height="14" fill="${COLORS[b[i]][1]}"${burnt?' opacity=".5"':''}/>`).join('')+
+        '<rect x="9" y="-7" width="3.6" height="14" fill="#c8a24a"/>'+
+        (burnt?'<ellipse cx="2" rx="12" ry="6" fill="#1a0d04" opacity=".6"/>':'')+
+        '<rect x="-14" y="-5" width="28" height="2.4" rx="1" fill="#fff" opacity=".18"/>';}
+    case 'fuse':
+      return '<rect x="-24" y="-8" width="48" height="16" rx="3" fill="#cfe3ea" fill-opacity=".22" stroke="#d6e2e6"/>'+
+        (f==='open'?'<ellipse rx="9" ry="5.5" fill="#1d1d1d" opacity=".6"/><path d="M-15 0H-4M5 1H15" stroke="#e6dfc4" stroke-width="1.4"/>':'<path d="M-15 0H15" stroke="#e6dfc4" stroke-width="1.4"/>')+
+        '<rect x="-24" y="-8" width="9" height="16" rx="2" fill="#c7ccd0"/><rect x="15" y="-8" width="9" height="16" rx="2" fill="#c7ccd0"/>';
+    case 'switch':
+      return '<rect x="-15" y="-15" width="30" height="30" rx="3" fill="#33373c" stroke="#50565c"/><circle r="8" fill="#121315"/><circle r="5.5" fill="#25282b"/>';
+    case 'led':{const w=p.color==='white';
+      return `<circle class="glow" r="30" fill="url(#${w?'gW':'gR'})"/><circle r="11" fill="${w?'#e9eef5':'#c8232c'}" fill-opacity=".92" stroke="#0005"/><path d="M-11 -5V5" stroke="#0006" stroke-width="2"/><circle cx="-3" cy="-3" r="3.4" fill="#fff" opacity=".45"/>`;}
+    case 'diode':
+      return '<rect x="-14" y="-6" width="28" height="12" rx="2.5" fill="#1b1b1d"/><rect x="7" y="-6" width="4" height="12" fill="#c9cdd1"/>';
+    case 'cap':{const dry=f==='dry';
+      return (dry?'<circle r="21" fill="#5a3d18" opacity=".55"/>':'')+
+        '<circle r="17" fill="#22397a" stroke="#11204a"/><path d="M-17 0A17 17 0 0 1 -7 -15.5L-7 15.5A17 17 0 0 1 -17 0Z" fill="#8fa6d8"/>'+
+        (dry?'<circle cx="2" r="9" fill="#9a7a4a" opacity=".55"/><path d="M-5 -5L9 9M9 -5L-5 9" stroke="#e4c48a" stroke-width="2.6"/><circle cx="0" cy="-2" r="3" fill="#fff" opacity=".35"/>'
+            :'<path d="M-4 -6L8 6M8 -6L-4 6" stroke="#9aa3b5" stroke-width="1.4"/>');}
+    case 'transistor':
+      return '<path d="M-15 0H15V8A15 13 0 0 1 -15 8Z" fill="#1c1c1e"/><rect x="-15" y="0" width="30" height="2" fill="#3a3a3e"/>';
+    case 'motor':
+      return '<circle r="31" fill="#aab0b5" stroke="#70777c" stroke-width="2"/><circle r="24" fill="#8c9398"/><g class="blades">'+
+        [0,120,240].map(a=>`<rect x="-4" y="-22" width="8" height="18" rx="4" fill="#3c4246" transform="rotate(${a})"/>`).join('')+
+        '</g><circle r="5" fill="#2a2e31"/>';
+    case 'speaker':
+      return '<circle r="35" fill="#1b1c20" stroke="#3b3d44" stroke-width="2"/><g class="cone"><circle r="26" fill="#26282e" stroke="#3b3d44"/><circle r="15" fill="#2f3138" stroke="#44474f"/><circle r="7" fill="#585c66"/></g>';
+    case 'battery':
+      return '<rect x="-44" y="-17" width="88" height="34" rx="4" fill="#26272b"/><rect x="-38" y="-11" width="70" height="22" rx="3" fill="#2f6fb5"/><rect x="-38" y="-11" width="20" height="22" rx="3" fill="#18191c"/><rect x="32" y="-5" width="6" height="10" rx="1.5" fill="#cfd3d6"/>';
+    case 'jack':
+      return '<rect x="-26" y="-18" width="52" height="36" rx="3" fill="#151618"/><circle cx="6" r="10" fill="#2c2e33"/><circle cx="6" r="3.2" fill="#b9bec2"/>';
+  }
+  return '';
+}
+function leads(p){
+  const t=TYPES[p.type];
+  if(p.type==='transistor')return Object.values(t.pads).map(([x,y])=>`<path d="M${x} ${y}L${x*.7} 2"/>`).join('');
+  const[a,b]=Object.values(t.pads);return `<path d="M${a[0]} ${a[1]}H${b[0]}"/>`;
+}
+function labelXY(p){
+  const sz=TYPES[p.type].sz;
+  if(p.type==='transistor')return[p.x+24,p.y+14,'start'];
+  return p.rot===90?[p.x+sz+7,p.y+5,'start']:[p.x,p.y-sz-8,'middle'];
+}
+function renderBoard(){
+  const J=S.job,d=J.dev;
+  const focusKey=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.t:null;
+  let s=`<svg viewBox="0 0 640 400" class="${J.running?'on':''}" role="group" aria-label="${d.name} 회로 기판">
+  <defs><radialGradient id="gW"><stop offset="0" stop-color="#fffbe8" stop-opacity="1"/><stop offset=".35" stop-color="#fff6c8" stop-opacity=".7"/><stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gR"><stop offset="0" stop-color="#ff6a55" stop-opacity=".95"/><stop offset="1" stop-color="#ff3b30" stop-opacity="0"/></radialGradient></defs>
+  <rect class="pcb" x="12" y="12" width="616" height="376" rx="14"/><rect class="pcb-edge" x="14" y="14" width="612" height="372" rx="12"/>
+  ${[[34,34],[606,34],[34,366],[606,366]].map(([x,y])=>`<circle class="hole" cx="${x}" cy="${y}" r="8"/>`).join('')}
+  <text class="silk dim" x="604" y="384" text-anchor="end">${d.code}</text>`;
+  J.traces.forEach(t=>{
+    const path='M'+t.pts.map(p=>p.join(' ')).join('L');
+    s+=`<g class="tr" data-t="T:${t.id}" tabindex="0" role="button" aria-label="패턴 ${t.id}"><path class="tr-v" d="${path}"/><path class="tr-h" d="${path}"/>`;
+    if(t.free)s+=`<circle class="junc" cx="${t.free[0]}" cy="${t.free[1]}" r="5"/>`;
+    const[x,y]=t.crack;
+    if(t.cracked&&t.seen&&!t.jumper)s+=t.horiz?`<path class="crack" d="M${x-1} ${y-6}L${x+2} ${y-1}L${x-1} ${y+2}L${x+1} ${y+6}"/>`:`<path class="crack" d="M${x-6} ${y-1}L${x-1} ${y+2}L${x+2} ${y-1}L${x+6} ${y+1}"/>`;
+    if(t.jumper)s+=t.horiz?`<path class="jumper" d="M${x-16} ${y}Q${x} ${y-24} ${x+16} ${y}"/>`:`<path class="jumper" d="M${x} ${y-16}Q${x+24} ${y} ${x} ${y+16}"/>`;
+    s+='</g>';
+  });
+  Object.values(J.parts).forEach(p=>{s+=`<g class="lead" transform="translate(${p.x} ${p.y}) rotate(${p.rot})">${leads(p)}</g>`;});
+  Object.values(J.joints).forEach(j=>{
+    const[x,y]=padXY(J.parts[j.part],j.pad),cold=j.cold&&j.seen;
+    s+=`<g class="jt" data-t="J:${j.id}" tabindex="0" role="button" aria-label="${j.part} ${j.pad.toUpperCase()} 다리 납땜"><circle class="pad-ring" cx="${x}" cy="${y}" r="8.5"/><circle class="pad${cold?' cold':''}" cx="${x}" cy="${y}" r="6.3"/>`+
+      (cold?`<path d="M${x-4} ${y-3}L${x} ${y}L${x-1} ${y+4}M${x} ${y}L${x+4} ${y-2}" stroke="#2c2f2b" stroke-width="1.2" fill="none"/>`:`<circle class="shine" cx="${x-2}" cy="${y-2}" r="2"/>`)+'</g>';
+  });
+  Object.values(J.parts).forEach(p=>{
+    const[lx,ly,an]=labelXY(p);
+    s+=`<g class="part" data-t="P:${p.id}" tabindex="0" role="button" aria-label="${p.id} ${TYPES[p.type].n}"><g transform="translate(${p.x} ${p.y}) rotate(${p.rot})">${body(p)}</g></g><text class="silk" x="${lx}" y="${ly}" text-anchor="${an}">${p.id}</text>`;
+  });
+  if(J.hl&&J.tut==null&&!faultsOf(J).some(f=>f.key===J.hl))J.hl=null;
+  if(J.hl&&J.hl!=='BTN'){
+    const[k,id]=J.hl.split(':');let x,y,r;
+    if(k==='P'){const p=J.parts[id];x=p.x;y=p.type==='transistor'?p.y:p.y;r=Math.max(TYPES[p.type].sz,14)+14;if(p.type==='resistor'||p.type==='fuse')r=30;}
+    else if(k==='J'){const j=J.joints[id];[x,y]=padXY(J.parts[j.part],j.pad);r=15;}
+    else{const t=J.traces.find(t=>t.id===id);[x,y]=t.crack;r=18;}
+    s+=`<circle class="hl" cx="${x}" cy="${y}" r="${r}"/>`;
+  }
+  s+='</svg>';
+  $('#board').innerHTML=s;
+  $('#power').classList.toggle('pulse',J.hl==='BTN');
+  if(focusKey){const el=$('#board').querySelector(`[data-t="${focusKey}"]`);if(el)el.focus({preventScroll:true});}
+}
+function renderTicket(){
+  const J=S.job;
+  $('#ticket').innerHTML=`<h2>수리 접수증 <span>No.${String(S.jobNo).padStart(4,'0')}</span></h2>
+    <dt>기기</dt><dd>${J.dev.name}</dd>
+    <dt>손님</dt><dd>${J.customer}</dd>
+    <dt>증상</dt><dd class="quote">“${J.complaint}”</dd>
+    <dt>수리비</dt><dd>${won(J.fee)}</dd>`;
+}
+const TOOL_TIP={
+  inspect:'돋보기: 부품의 겉모습, 색띠, 표기를 확인합니다. 패드와 패턴은 하나씩 눌러야 냉납·균열이 보입니다.',
+  meter:'멀티미터: 아래에서 모드를 고르고 부품·패드·패턴을 찍으세요. 통전 모드는 이어져 있으면 삑 소리가 납니다.',
+  iron:'인두: 패드를 누르면 다시 납땜하고, 패턴을 누르면 점퍼선을 땜합니다(₩200).',
+  replace:'부품 교체: 부품을 누르면 부품함이 열립니다. 값이 맞는 부품을 골라야 합니다.',
+};
+function renderStats(){
+  $('#money').textContent=won(S.money);$('#done').textContent=S.done;
+  document.querySelectorAll('.tool').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tool===S.tool)));
+  document.querySelectorAll('#dial button').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.mode===S.mode)));
+  $('#app').className='app tool-'+S.tool;
+  $('#tooltip').textContent=TOOL_TIP[S.tool];
+}
+function renderCoach(){
+  const J=S.job,c=$('#coach');let title='',txt=null;
+  if(J.tut!=null){title=`따라 하기 ${J.tut+1} / ${TUT.length}`;txt=J.tutMsg||TUT[J.tut].t;J.hl=TUT[J.tut].hl;}
+  else if(J.lesson&&!J.done){title='새로 나온 고장';txt=J.lesson;}
+  c.hidden=!txt;
+  if(txt){c.innerHTML=`<b>${title}</b><p></p>`;c.querySelector('p').textContent=txt;}
+}
+function tutEvent(e){
+  const J=S.job;if(J.tut==null)return;
+  J.tutMsg=null;
+  if(TUT[J.tut].done(e))J.tut++;
+  else if(e.type==='replace'&&!e.ok&&J.tut===3)J.tutMsg='값이 다른 저항을 달았어요. R1을 다시 눌러 47Ω짜리로 바꿔 주세요. (노랑·보라·검정)';
+  else if(e.type==='meter'&&J.tut===2&&e.key==='P:R1')J.tutMsg='모드가 달라요. 멀티미터 아래쪽에서 [Ω 저항]을 고른 뒤 R1을 다시 눌러 보세요.';
+  if(J.tut<4&&!faultsOf(J).length)J.tut=4;
+  if(J.tut>=TUT.length){J.tut=null;J.hl=null;}
+  renderCoach();renderBoard();
+}
+function renderAll(){renderCoach();renderBoard();renderTicket();renderStats();}
+
+/* ---------- log ---------- */
+function log(msg,cls){
+  const t=S.job?mmss((Date.now()-S.job.start)/1000):'--:--';
+  const li=document.createElement('li');li.innerHTML=`<time>${t}</time><span class="${cls||''}"></span>`;li.lastChild.textContent=msg;
+  const L=$('#log');L.prepend(li);while(L.children.length>40)L.lastChild.remove();
+}
+
+/* ---------- audio ---------- */
+let AC=null;
+function beep(freq,dur,type){
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'square';o.frequency.value=freq;g.gain.value=.05;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+dur);}catch(e){}
+}
+
+/* ---------- targets ---------- */
+function resolve(key){
+  const[k,id]=key.split(':'),J=S.job;
+  if(k==='P')return{key,k:'part',o:J.parts[id],name:`${id} · ${TYPES[J.parts[id].type].n}`};
+  if(k==='J'){const j=J.joints[id];return{key,k:'joint',o:j,name:`${j.part}의 ${j.pad.toUpperCase()} 다리 납땜`};}
+  const t=J.traces.find(t=>t.id===id);return{key,k:'trace',o:t,name:`패턴 ${id}`};
+}
+
+function inspect(tg){
+  const o=tg.o;let m='';
+  if(tg.k==='part'){
+    const f=o.fault;
+    switch(o.type){
+      case 'resistor':m=`색띠: ${bandNames(o.val)}${S.easy?` (= ${rLabel(o.val)})`:''}. `+(f==='burnt'?'몸체가 갈색으로 그을렸고 탄 냄새가 난다.':'겉보기엔 멀쩡하다.');break;
+      case 'fuse':m=f==='open'?'유리관 안 필라멘트가 끊어지고 안쪽이 검게 그을렸다.':'필라멘트가 이어져 있다. 표기: 1A 250V.';break;
+      case 'cap':m=`표기: ${o.val}µF 16V. `+(f==='dry'?'윗면 방폭 벤트가 볼록 부풀고 바닥에 갈색 전해액이 말라붙었다.':'겉모습은 정상이다.');break;
+      case 'led':m='5mm LED. 겉보기엔 이상이 없다.';break;
+      case 'diode':m='1N4001. 띠가 있는 쪽이 캐소드. 겉보기엔 이상이 없다.';break;
+      case 'transistor':m='2N3904 NPN. 다리는 왼쪽부터 E·B·C. 겉보기엔 이상이 없다.';break;
+      case 'switch':m='택트 스위치. 눌러 보면 딸깍 소리는 난다.';break;
+      case 'motor':m='130형 DC 모터. 손으로 돌리면 부드럽게 돈다.';break;
+      case 'speaker':m='8Ω 스피커. 콘지에 찢어진 곳은 없다.';break;
+      default:m='전원 단자. 접점이 깨끗하다.';
+    }
+  }else if(tg.k==='joint'){
+    o.seen=true;m=o.cold?'표면이 회색으로 탁하고 리드 둘레에 실금이 갔다. 냉납이다.':o.fresh?'방금 한 납땜. 반짝이고 매끈하다.':'반짝이는 원뿔형 납땜. 양호하다.';
+  }else{
+    o.seen=true;m=o.jumper?'점퍼선으로 이어 놓았다.':o.cracked?'패턴 중간에 머리카락 같은 균열이 보인다!':'패턴에 이상이 없다.';
+  }
+  log(`${tg.name}: ${m}`,(tg.k!=='part'&&(o.cold||(o.cracked&&!o.jumper)))||(tg.k==='part'&&(o.fault==='burnt'||o.fault==='dry'||(o.type==='fuse'&&o.fault==='open')))?'bad':'');
+  renderBoard();tutEvent({type:'inspect',key:tg.key});
+}
+
+const MAIN_MODE={resistor:'ohm',fuse:'cont',switch:'cont',motor:'cont',speaker:'cont',led:'diode',diode:'diode',transistor:'diode',cap:'cap'};
+const ACCEPT={resistor:['ohm','cont'],fuse:['ohm','cont'],switch:['ohm','cont'],motor:['ohm','cont'],speaker:['ohm','cont'],led:['diode'],diode:['diode','ohm','cont'],transistor:['diode','ohm','cont'],cap:['cap','ohm','diode','cont']};
+const MODE_SHORT={ohm:'Ω 저항',cont:'•))) 통전',diode:'→| 다이오드',cap:'⊣⊢ 용량'};
+function verdict(tg){
+  const m=S.mode,o=tg.o;
+  if(tg.k!=='part'){
+    if(m!=='ohm'&&m!=='cont')return['','납땜과 패턴은 [Ω 저항]이나 [•))) 통전] 모드로 재 보세요.'];
+    const bad=tg.k==='trace'?(o.cracked&&!o.jumper):o.cold;
+    return bad?['bad','끊겨 있다! 여기가 고장 난 곳.']:['ok','잘 이어져 있다. 정상.'];
+  }
+  const want=MAIN_MODE[o.type];
+  if(!want)return['','전원 단자는 재지 않아도 된다.'];
+  if(!ACCEPT[o.type].includes(m))return['',`이 부품은 [${MODE_SHORT[want]}] 모드로 재 보세요.`];
+  const f=o.fault;
+  switch(o.type){
+    case 'resistor':
+      if(f==='open')return['bad','속이 끊어졌다(단선). 교체해야 한다.'];
+      if(f==='burnt')return['bad',`정상은 ${rLabel(o.value)}인데 훨씬 크다. 타 버렸다.`];
+      if(f==='wrong')return['bad',`정상은 ${rLabel(o.value)}인데 값이 다르다.`];
+      return['ok',`정상 값(${rLabel(o.value)})이다.`];
+    case 'led':return f?['bad','불이 전혀 안 들어온다. LED가 죽었다.']:['ok','살짝 빛난다. 정상.'];
+    case 'diode':case 'transistor':return f?['bad','0에 가깝다 = 단락! 교체해야 한다.']:['ok',m==='diode'?'0.5~0.7V. 정상.':'단락은 아니다. 정상.'];
+    case 'cap':
+      if(f==='short')return['bad','단락! 교체해야 한다.'];
+      if(m!=='cap')return['ok','단락은 아니다. 용량은 [⊣⊢ 용량] 모드로 재 보세요.'];
+      if(f==='dry')return['bad',`정상은 ${o.value}µF인데 너무 작다. 말라 버렸다.`];
+      if(f==='wrong')return['bad',`정상은 ${o.value}µF인데 값이 다르다.`];
+      return['ok',`정상 값(${o.value}µF)이다.`];
+    default:return f?['bad','끊어졌다. 교체해야 한다.']:['ok','잘 통한다. 정상.'];
+  }
+}
+
+const MODE_NAME={ohm:'저항 Ω',cont:'통전 •)))',diode:'다이오드 →|',cap:'용량 ⊣⊢'};
+function measure(tg){
+  const m=S.mode,o=tg.o;let val='0L',unit=m==='diode'?'V':m==='cap'?'µF':'Ω',b=false,note='';
+  const ohmish=r=>{if(r===Infinity){val='0L';unit='Ω';}else{[val,unit]=fmtOhm(r);}b=m==='cont'&&r<30;};
+  if(tg.k!=='part'){
+    const bad=tg.k==='trace'?(o.cracked&&!o.jumper):o.cold;
+    if(m==='ohm'||m==='cont'){
+      if(bad&&tg.k==='joint'&&Math.random()<.35){ohmish(rnd(20,400));note='값이 계속 흔들린다.';}
+      else ohmish(bad?Infinity:rnd(0,.3));
+      if(!note)note=tg.k==='joint'?'부품 다리와 패드 사이를 쟀다.':'패턴 양 끝을 쟀다.';
+    }else{val='----';note='패턴·납땜은 저항이나 통전 모드로 재세요.';}
+    return{val,unit,b,note};
+  }
+  const f=o.fault;
+  switch(o.type){
+    case 'resistor':{
+      const r=f==='open'?Infinity:f==='burnt'?o.val*o.drift:o.val*rnd(.985,1.015);
+      if(m==='ohm'||m==='cont')ohmish(r);else if(m==='diode'){val='0L';}else{val='----';note='저항은 용량 모드로 잴 수 없다.';}
+      break;}
+    case 'fuse':case 'switch':case 'motor':case 'speaker':{
+      const base={fuse:.1,switch:.2,motor:6.8,speaker:8}[o.type];
+      const r=f==='open'?Infinity:base*rnd(.95,1.05);
+      if(o.type==='switch')note='버튼을 누른 채로 쟀다.';
+      if(m==='ohm'||m==='cont')ohmish(r);else if(m==='diode'){val=r===Infinity?'0L':(r*.001).toFixed(3);b=r!==Infinity;}else{val='----';}
+      break;}
+    case 'led':
+      if(m==='diode'){if(f==='open')val='0L';else{val=(o.color==='white'?rnd(2.62,2.74):rnd(1.78,1.86)).toFixed(2);note='LED가 희미하게 빛난다.';}}
+      else if(m==='cap')val='----';else ohmish(Infinity);
+      break;
+    case 'diode':case 'transistor':{
+      const sh=f==='short';if(o.type==='transistor')note=sh?'B-E와 C-E를 차례로 쟀다.':'B-E 접합을 쟀다.';
+      if(m==='diode'){val=sh?'0.00':rnd(.55,.68).toFixed(3);b=sh;}
+      else if(m==='cap')val='----';else ohmish(sh?rnd(0,.4):Infinity);
+      break;}
+    case 'cap':{
+      const sh=f==='short';
+      if(m==='cap'){if(sh){val='----';note='단락되어 용량을 잴 수 없다.';}else{const c=f==='dry'?o.val*o.dryK:o.val*rnd(.92,1.06);val=c<100?c.toFixed(1):c.toFixed(0);}}
+      else if(m==='diode'){val=sh?'0.00':'0L';b=sh;}
+      else{if(sh)ohmish(rnd(0,.4));else{ohmish(Infinity);note='값이 오르다가 0L로 넘어간다 (충전 중).';}}
+      break;}
+    default:val='----';note='전원 단자는 측정할 부품이 아니다.';
+  }
+  return{val,unit,b,note};
+}
+function meter(tg){
+  const r=measure(tg);
+  $('#lcdMode').textContent=MODE_NAME[S.mode];$('#lcdVal').textContent=r.val;$('#lcdUnit').textContent=r.unit;
+  $('#lcdNote').textContent=r.note;$('#lcdBeep').textContent=r.b?'•))) 삑':'';$('#probe').textContent=tg.name.split(' · ')[0];
+  if(r.b)beep(2700,.16);
+  const vd=$('#verdict');let extra='';
+  if(S.easy){const[c,t]=verdict(tg);vd.hidden=false;vd.className='verdict '+c;vd.textContent='판정: '+t;extra=' → '+t;}else vd.hidden=true;
+  log(`${tg.name} [${MODE_NAME[S.mode]}] ${r.val} ${r.unit}${r.b?' (삑)':''}${extra}`,'meter-l');
+  tutEvent({type:'meter',key:tg.key});
+}
+
+function giveHint(){
+  const J=S.job;if(!J||J.done||S.busy)return;
+  if(J.tut!=null){log('위의 노란 안내를 따라 해 보세요: '+(J.tutMsg||TUT[J.tut].t));return;}
+  const fl=faultsOf(J);
+  if(!fl.length){log('고칠 곳은 다 고친 것 같다. [전원 넣고 테스트]를 눌러 보자.');return;}
+  const f=fl.find(x=>x.kind==='short')||fl.find(x=>x.kind!=='open'||x.o.type!=='fuse')||fl[0];
+  if(J.hintKey!==f.key){J.hintKey=f.key;J.hintLv=0;}
+  if(J.hintLv>=2){J.hl=f.key;renderBoard();log('노란 점선으로 표시한 곳을 고치면 된다.');return;}
+  J.hintLv++;S.money-=500;J.hintCost+=500;save();renderStats();
+  const o=f.o,id=o.id,T=o.type?TYPES[o.type]:null;
+  const val=o.type==='resistor'?rLabel(o.value):o.type==='cap'?o.value+'µF':'같은 부품';
+  let m;
+  if(J.hintLv===1){
+    m={open:`${T&&T.n||'부품'} 하나가 속에서 끊어진 것 같다. [멀티미터]로 부품들을 재 보자. 판정에 "끊어졌다"가 뜨는 걸 찾으면 된다.`,
+       burnt:'어디서 탄 냄새가 난다. [돋보기]로 저항들을 살펴보자.',
+       short:'퓨즈가 끊어진 진짜 이유가 따로 있다. [멀티미터] 다이오드 모드로 0.00이 뜨는 부품을 찾아보자.',
+       dry:'캐패시터가 수상하다. [돋보기]로 윗면을 보거나 [⊣⊢ 용량] 모드로 재 보자.',
+       cold:'부품은 멀쩡한데 납땜이 문제다. [돋보기]로 패드(동그란 은색 점)를 하나씩 눌러 보자.',
+       crack:'기판의 초록 선(패턴) 어딘가가 갈라졌다. [멀티미터] 통전 모드로 패턴을 하나씩 재 보자.',
+       wrong:'최근에 단 부품의 값이 틀린 것 같다.'}[f.kind];
+  }else{
+    J.hl=f.key;
+    m={open:`${id}가 끊어졌다. [부품 교체]로 ${val}(으)로 갈자.`,
+       burnt:`${id}가 탔다. [부품 교체]로 ${val}짜리로 갈자.`,
+       short:`${id}가 단락됐다. [부품 교체]로 갈고, 끊어진 퓨즈도 새것으로 갈자.`,
+       dry:`${id}가 말랐다. [부품 교체]로 ${val}짜리로 갈자.`,
+       cold:`${o.part}의 ${o.pad?o.pad.toUpperCase():''} 다리가 냉납이다. [인두]를 고르고 그 패드를 누르자.`,
+       crack:`패턴 ${id}에 금이 갔다. [인두]를 고르고 그 패턴을 눌러 점퍼선을 달자.`,
+       wrong:`${id}는 원래 ${val}이어야 한다. [부품 교체]로 다시 갈자.`}[f.kind];
+    renderBoard();
+  }
+  log(`힌트 ${J.hintLv}단계 (-₩500): ${m}`,'meter-l');
+}
+
+function iron(tg){
+  const o=tg.o;
+  if(tg.k==='part'){log('부품을 통째로 바꾸려면 [부품 교체]를 고르세요. 다리만 다시 땜하려면 패드를 누르세요.');return;}
+  if(tg.k==='joint'){
+    solder(`${o.part}의 ${o.pad.toUpperCase()} 다리 재납땜`,'오래된 납을 녹여 새 납을 먹입니다.',()=>{
+      const wasCold=o.cold;o.cold=false;o.fresh=true;o.seen=true;
+      log(`${tg.name}을(를) 다시 땜했다.`+(wasCold?' 냉납이 사라졌다.':''),'ok');renderBoard();
+    });return;
+  }
+  if(o.jumper){log(`${tg.name}에는 이미 점퍼선이 달려 있다.`);return;}
+  solder(`${o.id} 패턴에 점퍼선 연결`,'균열 양쪽 패턴을 긁어 내고 점퍼선을 땜합니다. 전선값 ₩200.',()=>{
+    o.jumper=true;o.seen=true;S.money-=200;S.job.spent+=200;if(!o.cracked)S.job.wasted++;
+    log(`${tg.name}에 점퍼선을 달았다. (-₩200)`,'ok');save();renderAll();
+  });
+}
+
+function replace(tg){
+  if(tg.k!=='part'){log('부품 교체는 부품 몸체를 눌러야 합니다. 납땜만 다시 하려면 [인두]를 쓰세요.');return;}
+  const p=tg.o,T=TYPES[p.type];
+  if(!T.price){log('전원 단자는 교체 대상이 아니다.');return;}
+  let opts;
+  if(p.type==='resistor'){const o=shuffle(RVALS.filter(v=>v!==p.value)).slice(0,3);o.push(p.value);opts=o.sort((a,b)=>a-b).map(v=>({v,t:rLabel(v),s:'색띠 '+bandNames(v),sw:v}));}
+  else if(p.type==='cap'){const o=shuffle(CVALS.filter(v=>v!==p.value)).slice(0,3);o.push(p.value);opts=o.sort((a,b)=>a-b).map(v=>({v,t:v+'µF 16V',s:T.stock}));}
+  else opts=[{v:undefined,t:T.stock,s:p.type==='led'?(p.color==='white'?'백색':'적색'):''}];
+  $('#dwTitle').textContent=`${p.id} 교체`;
+  $('#dwSub').textContent=`${T.n}을(를) 떼어 내고 새 부품을 답니다. 원래 값을 모르면 먼저 돋보기로 확인하세요.`;
+  $('#dwList').innerHTML='';
+  opts.forEach(op=>{
+    const b=document.createElement('button');b.type='button';b.className='opt';
+    const swatch=op.sw?`<svg viewBox="-24 -9 48 18" width="52" height="20"><path d="M-24 0H24" stroke="#b6babe" stroke-width="2"/><rect x="-16" y="-7" width="32" height="14" rx="6" fill="#dcc79b"/>${bands(op.sw).map((c,i)=>`<rect x="${-10+i*6}" y="-7" width="3.6" height="14" fill="${COLORS[c][1]}"/>`).join('')}<rect x="8" y="-7" width="3.6" height="14" fill="#c8a24a"/></svg>`
+      :`<svg viewBox="-20 -20 40 40" width="40" height="40"><g transform="scale(.55)">${body({type:p.type,val:p.val,color:p.color})}</g></svg>`;
+    b.innerHTML=`${swatch}<span><b>${op.t}</b><small>${op.s}</small></span><span class="price">${won(T.price)}</span>`;
+    b.onclick=()=>{closeModal('#drawer');
+      solder(`${p.id} 자리에 새 ${T.n} 납땜`,`${op.t} — 다리 두 개를 차례로 땜하는 셈 치고 한 번에 끝냅니다.`,()=>{
+        const J=S.job;S.money-=T.price;J.spent+=T.price;if(!p.fault)J.wasted++;
+        p.val=op.v!==undefined?op.v:p.value;p.fault=(op.v!==undefined&&op.v!==p.value)?'wrong':null;
+        Object.values(J.joints).forEach(j=>{if(j.part===p.id){j.cold=false;j.fresh=true;}});
+        log(`${p.id}을(를) 새 ${op.t}(으)로 갈았다. (-${won(T.price)})`,p.fault?'bad':'ok');save();renderAll();
+        tutEvent({type:'replace',key:'P:'+p.id,ok:!p.fault});
+      });
+    };
+    $('#dwList').appendChild(b);
+  });
+  openModal('#drawer');
+}
+
+/* ---------- power test ---------- */
+function powerTest(){
+  const J=S.job;if(!J||J.done||S.busy)return;
+  const fl=faultsOf(J),fuse=Object.values(J.parts).find(p=>p.type==='fuse');
+  let out;
+  if(fuse&&fuse.fault!=='open'&&fl.some(f=>f.kind==='short')){
+    fuse.fault='open';J.blows++;beep(90,.25,'sawtooth');
+    out={ok:false,msgs:[GENERIC_SYM.short]};
+  }else if(!fl.length){
+    J.done=true;J.running=true;beep(880,.12,'sine');setTimeout(()=>beep(1320,.18,'sine'),130);
+    out={ok:true,msgs:[J.dev.ok]};
+  }else{
+    out={ok:false,msgs:categories(J).slice(0,2).map(c=>J.dev.sym[c]||GENERIC_SYM[c]||GENERIC_SYM.dead)};
+  }
+  const box=$('#testout');box.className='testout '+(out.ok?'ok':'bad');
+  box.innerHTML='<b>테스트 결과</b>'+out.msgs.map(m=>`<p></p>`).join('');
+  [...box.querySelectorAll('p')].forEach((p,i)=>p.textContent=out.msgs[i]);
+  log('전원 테스트: '+out.msgs.join(' '),out.ok?'ok':'bad');
+  renderBoard();tutEvent({type:'test'});
+  if(out.ok)setTimeout(finish,1500);
+}
+function finish(){
+  const J=S.job,t=(Date.now()-J.start)/1000;
+  const bonus=t<90?4000:t<150?2000:0;
+  const stars=Math.max(1,3-(J.wasted>0?1:0)-(t>180?1:0)-(J.blows>0?1:0));
+  S.money+=J.fee+bonus;S.done++;S.jobNo++;save();renderStats();
+  const net=J.fee+bonus-J.spent-J.penalty-J.hintCost;
+  $('#rsTitle').textContent=`${J.dev.name} 수리 완료`;
+  $('#rsBody').innerHTML=`<div class="stars" aria-label="별점 ${stars}점">${'★'.repeat(stars)}<i>${'★'.repeat(3-stars)}</i></div>
+    <div class="res-lines">
+      <div><span>수리비</span><span>+${won(J.fee)}</span></div>
+      <div><span>빠른 수리 보너스 (${mmss(t)})</span><span>+${won(bonus)}</span></div>
+      <div><span>부품·전선값</span><span>-${won(J.spent)}</span></div>
+      <div><span>과열 손상 보수</span><span>-${won(J.penalty)}</span></div>
+      <div><span>힌트</span><span>-${won(J.hintCost)}</span></div>
+      <div class="tot"><span>이번 작업 순이익</span><span>${won(net)}</span></div>
+    </div>
+    <p class="sub" style="margin-top:10px">실제 고장 원인</p>
+    <ul class="causes">${J.causes.map(c=>`<li>${c}</li>`).join('')}</ul>
+    ${J.wasted?`<p class="sub">멀쩡한 곳을 ${J.wasted}번 손댔다.</p>`:''}${J.blows?`<p class="sub">테스트 중 퓨즈를 ${J.blows}번 날렸다.</p>`:''}`;
+  openModal('#result');
+}
+function nextJob(){
+  closeModal('#result');S.job=buildJob();
+  $('#testout').className='testout';$('#testout').innerHTML='<b>테스트 결과</b><p>아직 전원을 넣어 보지 않았다.</p>';
+  $('#lcdVal').textContent='0L';$('#lcdNote').textContent='새 기기가 올라왔다.';$('#lcdBeep').textContent='';$('#probe').textContent='프로브 대기 중';$('#verdict').hidden=true;
+  renderAll();log(`새 손님: ${S.job.customer}, ${S.job.dev.name}. “${S.job.complaint}”`);
+}
+
+/* ---------- modals ---------- */
+let lastFocus=null;
+function openModal(sel){S.busy=true;lastFocus=document.activeElement;$(sel).hidden=false;const f=$(sel).querySelector('button.opt,button.hold,button.primary,button');if(f)f.focus();}
+function closeModal(sel){$(sel).hidden=true;S.busy=!$('#solder').hidden||!$('#drawer').hidden||!$('#result').hidden;if(!S.busy&&lastFocus&&document.body.contains(lastFocus))lastFocus.focus({preventScroll:true});}
+
+/* soldering mini-game */
+const SD={on:false,hold:false,heat:0,z0:0,z1:0,speed:0,cb:null,last:0,lock:false};
+function solder(title,sub,cb){
+  Object.assign(SD,{on:true,hold:false,heat:0,cb,lock:false,speed:100/rnd(1300,1900)});
+  SD.z0=rnd(50,70);SD.z1=SD.z0+rnd(13,17);
+  $('#sdTitle').textContent=title;$('#sdSub').textContent=sub;
+  $('#sdZone').style.left=SD.z0+'%';$('#sdZone').style.width=(SD.z1-SD.z0)+'%';
+  setMsg('버튼을 누르고 있으면 인두가 패드를 데웁니다. 게이지가 초록 구간에 들어왔을 때 손을 떼세요.','');
+  drawSD();openModal('#solder');SD.last=performance.now();requestAnimationFrame(tick);
+}
+function setMsg(t,c){const m=$('#sdMsg');m.textContent=t;m.className='sd-msg '+c;}
+function drawSD(){
+  $('#sdFill').style.width=SD.heat+'%';
+  const h=SD.heat/100;$('#sdBlob').setAttribute('rx',8+h*14);$('#sdBlob').setAttribute('ry',3+h*6);
+  $('#sdBlob').setAttribute('fill',SD.heat>SD.z1?'#a39a86':'#d4d8db');
+  $('#sdSmoke').classList.toggle('on',SD.hold);$('#sdHold').classList.toggle('active',SD.hold);
+}
+function tick(t){
+  if(!SD.on)return;
+  const dt=t-SD.last;SD.last=t;
+  if(SD.hold){SD.heat=Math.min(100,SD.heat+dt*SD.speed);if(SD.heat>=100)release();}
+  drawSD();requestAnimationFrame(tick);
+}
+function press(){if(!SD.on||SD.lock)return;SD.hold=true;}
+function release(){
+  if(!SD.on||!SD.hold)return;SD.hold=false;const h=SD.heat;
+  if(h<SD.z0){setMsg('납이 덜 녹았다. 이대로면 또 냉납이 된다. 다시 해 보세요.','bad');SD.heat=0;}
+  else if(h<=SD.z1){
+    setMsg('반짝이는 원뿔 모양으로 잘 붙었다.','ok');SD.lock=true;beep(1200,.06,'sine');
+    setTimeout(()=>{SD.on=false;closeModal('#solder');const cb=SD.cb;SD.cb=null;cb&&cb();},550);
+  }else{
+    S.money-=1500;S.job.penalty+=1500;save();renderStats();
+    setMsg('너무 오래 지졌다. 패드가 들떠서 보수했다 (-₩1,500). 다시 해 보세요.','bad');SD.heat=0;log('과열로 패드가 들떴다. 보수 비용 -₩1,500','bad');
+  }
+  drawSD();
+}
+const hold=$('#sdHold');
+hold.addEventListener('pointerdown',e=>{e.preventDefault();hold.setPointerCapture&&hold.setPointerCapture(e.pointerId);press();});
+hold.addEventListener('pointerup',release);hold.addEventListener('pointercancel',release);
+hold.addEventListener('contextmenu',e=>e.preventDefault());
+$('#sdCancel').onclick=()=>{SD.on=false;SD.hold=false;closeModal('#solder');log('납땜을 그만뒀다.');};
+$('#dwCancel').onclick=()=>closeModal('#drawer');
+$('#rsNext').onclick=nextJob;
+
+/* ---------- input ---------- */
+const board=$('#board');
+function act(el){if(!el||S.busy||!S.job||S.job.done)return;const tg=resolve(el.dataset.t);
+  ({inspect,meter,iron,replace})[S.tool](tg);}
+board.addEventListener('click',e=>act(e.target.closest('[data-t]')));
+board.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const el=e.target.closest('[data-t]');if(el){e.preventDefault();act(el);}}});
+const VERB={inspect:'눌러서 살펴보기',meter:'눌러서 측정하기',iron:'눌러서 납땜하기',replace:'눌러서 부품 교체'};
+function hint(el){if(!el||!S.job)return;$('#hint').textContent=`${resolve(el.dataset.t).name} — ${VERB[S.tool]}`;}
+board.addEventListener('mouseover',e=>hint(e.target.closest('[data-t]')));
+board.addEventListener('focusin',e=>hint(e.target.closest('[data-t]')));
+$('#tools').addEventListener('click',e=>{const b=e.target.closest('.tool');if(b){S.tool=b.dataset.tool;renderStats();}});
+$('#dial').addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.mode=b.dataset.mode;$('#lcdMode').textContent=MODE_NAME[S.mode];renderStats();}});
+$('#power').onclick=powerTest;
+$('#hintBtn').onclick=giveHint;
+$('#easy').checked=S.easy;
+$('#easy').onchange=e=>{S.easy=e.target.checked;save();if(!S.easy)$('#verdict').hidden=true;};
+let resetArmed=false;
+$('#reset').onclick=()=>{
+  if(!resetArmed){resetArmed=true;$('#reset').textContent='정말요? 잔고와 기록이 사라집니다. 한 번 더 누르세요';setTimeout(()=>{resetArmed=false;$('#reset').textContent='가게 처음부터 다시 시작';},4000);return;}
+  resetArmed=false;$('#reset').textContent='가게 처음부터 다시 시작';
+  S.money=20000;S.jobNo=1;S.done=0;S.seen=[];save();$('#log').innerHTML='';nextJob();
+};
+document.addEventListener('keydown',e=>{
+  if(!$('#solder').hidden){if(e.code==='Space'){e.preventDefault();if(!e.repeat)press();}if(e.key==='Escape')$('#sdCancel').click();return;}
+  if(!$('#drawer').hidden){if(e.key==='Escape')closeModal('#drawer');return;}
+  if(S.busy)return;
+  if(e.target.closest&&e.target.closest('input,textarea'))return;
+  const tools={'1':'inspect','2':'meter','3':'iron','4':'replace'};
+  if(tools[e.key]){S.tool=tools[e.key];renderStats();}
+  else if(e.key==='p'||e.key==='P')powerTest();
+  else if(e.key==='h'||e.key==='H')giveHint();
+});
+document.addEventListener('keyup',e=>{if(!$('#solder').hidden&&e.code==='Space'){e.preventDefault();release();}});
+
+/* color code chart */
+$('#cc').innerHTML=COLORS.map((c,i)=>`<div><span class="sw" style="background:${c[1]}"></span>${c[0]} <b style="margin-left:auto;font-family:var(--f-mono);font-weight:400">${i}</b></div>`).join('');
+
+setInterval(()=>{const J=S.job;if(J&&!J.done)$('#time').textContent=mmss((Date.now()-J.start)/1000);},500);
+
+S.job=buildJob();renderAll();
+log('작업 순서: ① 돋보기로 살피고 ② 멀티미터로 재고 ③ 인두나 부품 교체로 고친 뒤 ④ 전원 테스트.');
+log(`새 손님: ${S.job.customer}, ${S.job.dev.name}. “${S.job.complaint}”`);
+})();
+</script>
+</body>
+</html>

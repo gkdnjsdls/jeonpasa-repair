@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전파사 수리대</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: 작업대 매트 위에 고칠 가전 한 대. 위에는 김 기사님 말풍선, 오른쪽에는 수리 노트 */
+:root{
+  color-scheme: dark;
+  --mat:#15242a; --mat-dot:#21363d; --panel:#1c2f36; --panel-2:#243c44; --line:#35525c;
+  --ink:#eef3ef; --muted:#9fb3ae;
+  --copper:#e9914c; --copper-ink:#2a1608;
+  --paper:#f4ecd8; --paper-ink:#2b241a;
+  --glow:#ffd84a; --ok:#6fe39a; --bad:#ff7a66;
+  --f-display:'Do Hyeon','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+  --f-body:'Gowun Dodum','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+}
+html,body{background:var(--mat);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.6;
+  background-image:radial-gradient(var(--mat-dot) 1.1px,transparent 1.4px);background-size:18px 18px}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+.app{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:grid;gap:16px}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:38px;height:38px;color:var(--copper)}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:32px;line-height:1;margin:0}
+.brand small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 14px}
+.stat span{display:block;font-size:12px;color:var(--muted)}
+.stat b{font-family:var(--f-display);font-weight:400;font-size:22px;font-variant-numeric:tabular-nums}
+.stat.money b{color:var(--copper)}
+
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:900px){.bench{grid-template-columns:minmax(0,1fr)}}
+.left,.right{display:grid;gap:14px;min-width:0}
+
+/* mentor bubble */
+.guide{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start}
+.avatar{width:64px;height:64px}
+.bubble{background:var(--paper);color:var(--paper-ink);border-radius:14px;padding:12px 16px 14px;position:relative;display:grid;gap:6px;min-height:92px}
+.bubble::before{content:"";position:absolute;left:-9px;top:22px;border:9px solid transparent;border-right-color:var(--paper);border-left:0}
+.bubble .who{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;opacity:.75}
+.bubble .say{font-size:18px;line-height:1.55;margin:0;max-width:62ch}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#2b241a;color:var(--paper);border-radius:999px;padding:2px 10px 2px 8px;font-size:13px;opacity:1}
+.chip svg{width:16px;height:16px}
+.bubble.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.nudge{font-size:14px;color:#a3402e;min-height:0}
+.progress{height:6px;border-radius:3px;background:#0002;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--copper);transition:width .3s}
+
+/* scene */
+.scene{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;overflow:hidden}
+.scene svg{display:block;width:100%;height:auto;max-width:100%}
+.hot{cursor:pointer}
+.act{animation:glow .8s ease-in-out infinite alternate}
+@keyframes glow{from{filter:drop-shadow(0 0 2px var(--glow))}to{filter:drop-shadow(0 0 9px var(--glow)) drop-shadow(0 0 3px var(--glow))}}
+.tp{fill:transparent;stroke:var(--glow);stroke-width:3;stroke-dasharray:4 4}
+.lbl{font-family:var(--f-body);font-size:13px;fill:var(--muted)}
+.cord{fill:none;stroke:#2a2d31;stroke-width:6;stroke-linecap:round}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin .3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.air path{fill:none;stroke-width:4;stroke-linecap:round;stroke-dasharray:14 10;animation:flow .5s linear infinite}
+.steam path{fill:none;stroke:#e6eef2;stroke-width:5;stroke-linecap:round;opacity:.7;stroke-dasharray:12 10;animation:flow .8s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+@media (prefers-reduced-motion:reduce){.act,.spin,.air path,.steam path{animation:none}}
+.beep{position:absolute;left:50%;top:18px;transform:translateX(-50%);font-family:var(--f-display);font-size:34px;padding:6px 22px;border-radius:12px;pointer-events:none}
+.beep.yes{background:var(--ok);color:#0d2b18}
+.beep.no{background:#3b4a50;color:#dfe7e9}
+
+/* side */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px}
+.panel h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:20px}
+.note{background:var(--paper);color:var(--paper-ink);border-radius:8px;padding:12px 14px;display:grid;gap:4px}
+.note b{font-size:12px;opacity:.6;font-weight:400}
+.note p{margin:0;font-family:var(--f-display);font-size:20px;line-height:1.35}
+.jobs{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.jobs button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;background:var(--panel-2);border:1.5px solid transparent;border-radius:8px;padding:8px 12px}
+.jobs button[aria-current="true"]{border-color:var(--copper)}
+.jobs small{display:block;color:var(--muted);font-size:13px}
+.stamp{font-family:var(--f-display);font-size:13px;color:var(--ok);border:1.5px solid var(--ok);border-radius:4px;padding:0 6px;transform:rotate(-6deg)}
+.stamp.todo{color:var(--muted);border-color:var(--line);transform:none}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px}
+
+/* modals */
+.scrim{position:fixed;inset:0;background:#081014cc;display:grid;place-items:center;padding:16px;z-index:10}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:min(440px,100%);display:grid;gap:12px;max-height:100%;overflow:auto}
+.sheet h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:28px}
+.sheet p{margin:0}
+.sub{color:var(--muted)}
+.sd-art{width:100%;height:auto;background:#2a3238;border-radius:8px}
+.heat{position:relative;height:22px;border-radius:11px;background:#0c1a1f;overflow:hidden;border:1px solid var(--line)}
+.zone{position:absolute;top:0;bottom:0;background:#6fe39a55;border-left:2px solid var(--ok);border-right:2px solid var(--ok)}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#4f6b75,#e8a04c 70%,#ff5a3c)}
+.sd-msg{min-height:50px}
+.sd-msg.bad{color:var(--bad)} .sd-msg.ok{color:var(--ok)}
+.row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.hold{background:var(--copper);color:var(--copper-ink);border:0;border-radius:8px;padding:14px 20px;font-weight:700;user-select:none;-webkit-user-select:none;touch-action:none}
+.hold.active{background:#ffb070}
+.smoke{opacity:0;transition:opacity .2s}
+.smoke.on{opacity:.8}
+.primary{background:var(--copper);color:var(--copper-ink);border:0;border-radius:8px;padding:12px 20px;font-weight:700}
+.paid{font-family:var(--f-display);font-size:26px;color:var(--copper)}
+[hidden]{display:none!important}
+body{margin:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 35l7-7"/><path d="M12 28l4-4 5 5-4 4z"/><path d="M19 22l11-11a3 3 0 014 4L23 26"/><path d="M6 20c2-3 0-5 2-8M11 17c2-3 0-5 2-8" opacity=".6"/>
+      </svg>
+      <div><h1>전파사 수리대</h1><small>김 기사님이 시키는 대로, 반짝이는 곳을 누르면 돼요</small></div>
+    </div>
+    <div class="stats">
+      <div class="stat money"><span>번 돈</span><b id="money">₩0</b></div>
+      <div class="stat"><span>고친 물건</span><b id="count">0 / 6</b></div>
+    </div>
+  </header>
+
+  <div class="bench">
+    <section class="left">
+      <div class="guide">
+        <svg class="avatar" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="34" r="24" fill="#f1c9a0"/>
+          <path d="M8 30c0-14 11-22 24-22s24 8 24 22z" fill="#2f6fb5"/><rect x="6" y="27" width="40" height="6" rx="3" fill="#24558c"/>
+          <circle cx="24" cy="38" r="2.6" fill="#2b241a"/><circle cx="40" cy="38" r="2.6" fill="#2b241a"/>
+          <path d="M24 47q8 6 16 0" stroke="#2b241a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <path d="M18 33h10M36 33h10" stroke="#5a4632" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        <div class="bubble" id="bubble" aria-live="polite">
+          <div class="who"><span>김 기사님 · 수리 30년 차</span><span id="stepNo"></span></div>
+          <p class="say" id="say"></p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="chip" id="chip"></span><span class="nudge" id="nudge"></span></div>
+          <div class="progress"><i id="prog"></i></div>
+        </div>
+      </div>
+      <div class="scene" id="scene"><div id="art"></div><div class="beep" id="beep" hidden></div></div>
+    </section>
+
+    <aside class="right">
+      <div class="note"><b>손님 쪽지</b><p id="complaint"></p></div>
+      <div class="panel">
+        <h3>수리 노트</h3>
+        <ul class="jobs" id="jobs"></ul>
+        <button class="ghost" type="button" id="reset">처음부터 다시 하기</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="scrim" id="solder" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sdTitle">
+    <h3 id="sdTitle">납땜하기</h3>
+    <p class="sub">인두는 납을 녹이는 뜨거운 펜이에요. 버튼을 꾹 누르고 있다가, 게이지가 <b style="color:var(--ok)">초록 칸</b>에 들어오면 손을 떼세요.</p>
+    <svg class="sd-art" viewBox="0 0 300 110" aria-hidden="true">
+      <rect x="0" y="78" width="300" height="32" fill="#1d2226"/>
+      <rect x="110" y="72" width="80" height="10" rx="3" fill="#c9a35a"/>
+      <rect x="146" y="20" width="8" height="62" fill="#b6babe"/>
+      <ellipse id="sdBlob" cx="150" cy="74" rx="8" ry="4" fill="#d4d8db"/>
+      <g class="smoke" id="sdSmoke" fill="none" stroke="#e6eee9" stroke-width="2" stroke-linecap="round">
+        <path d="M178 50c-6-8 6-12 0-20s6-12 0-18"/><path d="M190 54c-6-8 6-12 0-20"/>
+      </g>
+      <path d="M168 70L210 40 290 4 296 14 216 50z" fill="#9aa1a6"/>
+      <path d="M168 70L176 58 186 64z" fill="#e08a46"/>
+      <path d="M118 66l26-30" stroke="#cfd3d6" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="heat"><div class="zone" id="sdZone"></div><div class="fill" id="sdFill"></div></div>
+    <p class="sd-msg" id="sdMsg"></p>
+    <div class="row"><button class="hold" type="button" id="sdHold">꾹 누르기 (스페이스바도 돼요)</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="done" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dnTitle">
+    <h3 id="dnTitle">수리 끝!</h3>
+    <p id="dnWhat"></p>
+    <p class="paid" id="dnPaid"></p>
+    <p class="sub" id="dnSay"></p>
+    <div class="row"><button class="primary" type="button" id="dnNext">다음 손님 받기</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const won=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
+
+/* ---------- tool chips ---------- */
+const TOOLS={
+  hand:['손','<path d="M8 13V5a1.5 1.5 0 013 0v6M11 11V4a1.5 1.5 0 013 0v7M14 11V5a1.5 1.5 0 013 0v8c0 4-2 7-6 7s-6-2-7-5l-1.5-3a1.4 1.4 0 012.4-1.4L8 13"/>'],
+  driver:['드라이버','<path d="M14 3l7 7-3 3-7-7z"/><path d="M11 6l-7 7a2 2 0 000 3l1 1a2 2 0 003 0l7-7"/>'],
+  tester:['테스터','<rect x="6" y="2" width="12" height="16" rx="2"/><path d="M9 6h6M10 22l-1-4M14 22l1-4"/>'],
+  iron:['인두','<path d="M2 22l5-5"/><path d="M7 17l3-3 4 4-3 3z"/><path d="M12 12l6-6a2.1 2.1 0 013 3l-6 6"/>'],
+  look:['돋보기','<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L20 20"/>'],
+  brush:['솔','<path d="M14 4l6 6-8 8-6-6z"/><path d="M6 12l-3 3 6 6 3-3"/>'],
+  scissors:['가위','<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8L20 18M8.5 16L20 6"/>'],
+};
+function chip(t){const[n,p]=TOOLS[t];return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>${n}`;}
+
+/* ---------- shared drawing ---------- */
+function screw(x,y,out,A,id){
+  return `<g ${A(id)}>`+(out?`<circle cx="${x}" cy="${y}" r="7" fill="#14201e" stroke="#0005"/>`
+    :`<circle cx="${x}" cy="${y}" r="9" fill="#cfd3d6" stroke="#7d858a" stroke-width="1.5"/><path d="M${x-5} ${y}h10M${x} ${y-5}v10" stroke="#6b7378" stroke-width="2"/>`)+'</g>';
+}
+function outlet(s,A,from){
+  const p=s.plugged?[526,350]:[468,376];
+  let o=`<rect x="540" y="316" width="52" height="68" rx="8" fill="#e9ecee"/><rect x="547" y="333" width="38" height="34" rx="6" fill="#d3d8db"/><circle cx="558" cy="350" r="3.5" fill="#333"/><circle cx="574" cy="350" r="3.5" fill="#333"/><text class="lbl" x="566" y="310" text-anchor="middle">콘센트</text>`;
+  if(from)o+=`<path class="cord" d="M${from[0]} ${from[1]} C${from[0]+20} ${from[1]+60} ${p[0]-80} ${p[1]+20} ${p[0]-14} ${p[1]}"/>`;
+  else o+=`<path class="cord" d="M400 400 C420 390 ${p[0]-60} ${p[1]+16} ${p[0]-14} ${p[1]}"/>`;
+  o+=`<g ${A('plug')}><rect x="${p[0]-16}" y="${p[1]-12}" width="32" height="24" rx="6" fill="#f2f2f0" stroke="#b9bfc3"/><rect x="${p[0]+16}" y="${p[1]-7}" width="10" height="3.5" fill="#c9cdd1"/><rect x="${p[0]+16}" y="${p[1]+3.5}" width="10" height="3.5" fill="#c9cdd1"/></g>`;
+  return o;
+}
+function box(A,icon){
+  return `<g ${A('box')}><text class="lbl" x="70" y="296" text-anchor="middle">부품 상자</text><path d="M16 312l12-10h84l12 10z" fill="#a8743f"/><rect x="16" y="312" width="108" height="72" rx="4" fill="#c78a4a"/>${icon?`<g transform="translate(70 346)">${icon}</g>`:''}</g>`;
+}
+function coverTile(A,color,label){
+  return `<g ${A('coverOff')}><text class="lbl" x="64" y="24" text-anchor="middle">${label}</text><rect x="18" y="32" width="92" height="56" rx="16" fill="${color}"/><rect x="28" y="40" width="70" height="8" rx="4" fill="#fff" opacity=".25"/></g>`;
+}
+function lens(x,y,tx,ty,art){
+  return `<line x1="${tx}" y1="${ty}" x2="${x}" y2="${y}" stroke="#ffd84a" stroke-width="2" stroke-dasharray="5 4"/><circle cx="${tx}" cy="${ty}" r="12" fill="none" stroke="#ffd84a" stroke-width="2"/>
+  <defs><clipPath id="lc"><circle cx="${x}" cy="${y}" r="62"/></clipPath></defs>
+  <g clip-path="url(#lc)"><g transform="translate(${x} ${y})">${art}</g></g>
+  <circle cx="${x}" cy="${y}" r="62" fill="none" stroke="#2b2d30" stroke-width="8"/><circle cx="${x}" cy="${y}" r="62" fill="none" stroke="#ffd84a" stroke-width="2"/>
+  <path d="M${x+44} ${y+44}l26 26" stroke="#2b2d30" stroke-width="12" stroke-linecap="round"/>`;
+}
+function zig(x0,x1,y,amp,step,gap){
+  let d='',pen=false;
+  for(let x=x0,i=0;x<=x1;x+=step,i++){
+    if(gap&&x>gap[0]&&x<gap[1]){pen=false;continue;}
+    d+=(pen?'L':'M')+x+' '+(y+(i%2?amp:-amp));pen=true;
+  }
+  return d;
+}
+const ZOOM={
+  coil:'<rect x="-70" y="-70" width="140" height="140" fill="#d9c89c"/><path d="'+zig(-70,-10,0,22,14)+'" stroke="#9aa1a6" stroke-width="5" fill="none"/><path d="M-10 -22q8 4 2 14" stroke="#9aa1a6" stroke-width="5" fill="none"/><path d="'+zig(12,70,0,22,14)+'" stroke="#9aa1a6" stroke-width="5" fill="none"/><ellipse cx="2" cy="4" rx="18" ry="10" fill="#3a2410" opacity=".55"/>',
+  sw:'<rect x="-70" y="-70" width="140" height="140" fill="#23292f"/><rect x="-50" y="-30" width="50" height="60" rx="6" fill="#444"/><circle cx="-20" cy="-26" r="13" fill="#8d918c"/><path d="M-28 -30l10 6" stroke="#5c605b" stroke-width="2"/><path d="M70 50 C40 40 30 20 22 6" stroke="#3b6fd0" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M22 6l-6 -8" stroke="#d48a3a" stroke-width="5" stroke-linecap="round"/>',
+  cap:'<rect x="-70" y="-70" width="140" height="140" fill="#2f353b"/><rect x="-26" y="-10" width="52" height="80" rx="8" fill="#2b2b2b"/><path d="M-26 -8Q0 -48 26 -8z" fill="#5a5a5a"/><path d="M-8 -30q8 -6 16 0" stroke="#999" stroke-width="2" fill="none"/><path d="M18 -6q6 20 2 40" stroke="#8a5a20" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="20" cy="38" r="5" fill="#8a5a20"/>',
+  disc:'<rect x="-70" y="-70" width="140" height="140" fill="#3a3f45"/><circle r="44" fill="#9ea5ab" stroke="#6f777d" stroke-width="4"/><ellipse cx="6" cy="4" rx="24" ry="16" fill="#2a1f14" opacity=".75"/><path d="M-30 -14l18 8 6 -10 14 14" stroke="#20160c" stroke-width="3" fill="none"/>',
+  burnt:'<rect x="-70" y="-70" width="140" height="140" fill="#3a3f45"/><rect x="-70" y="-10" width="140" height="20" rx="10" fill="#e0a030"/><rect x="-34" y="-12" width="68" height="24" rx="10" fill="#1b1410"/><path d="M-24 -6l10 6 -6 6M6 -8l8 10 10 -4" stroke="#5a3a20" stroke-width="2" fill="none"/><ellipse cx="0" cy="-20" rx="40" ry="10" fill="#000" opacity=".35"/>',
+};
+
+/* ---------- appliances ---------- */
+const PLUG_OUT={say:'안전이 제일 먼저야! 전기가 들어온 채로 열면 큰일 나. 콘센트에서 플러그부터 뽑자.',tool:'hand',act:'tap',h:'plug',run:s=>{s.plugged=false;}};
+const PLUG_IN={say:'다 됐다! 플러그를 다시 콘센트에 꽂아.',tool:'hand',act:'tap',h:'plug',run:s=>{s.plugged=true;}};
+const TEST_TIP='테스터는 전기가 통하는지 알려 주는 도구야. 두 군데를 차례로 눌러서 "삐" 소리가 나면 이어진 거고, 조용하면 끊긴 거야.';
+
+const APPS={
+  dryer:{
+    name:'헤어드라이기',color:'#3fb6a8',
+    pts:{hA:[228,130],hB:[422,130],sIn:[290,268]},
+    init:v=>({plugged:true,open:false,out:{},heater:v==='a'?'broken':'ok',wire:v==='b'?'off':'ok',zoom:null,on:false}),
+    draw(s,A){
+      const body='#3fb6a8',dark='#2d8a80',shell='#1f5a53';
+      let o='';
+      if(!s.open){
+        o+=`<g ${A('cover')}><ellipse cx="118" cy="130" rx="16" ry="56" fill="#9aa5ab"/><path d="M110 96v68M118 80v100M126 90v80" stroke="#6f7a80" stroke-width="2"/>
+          <rect x="110" y="70" width="370" height="120" rx="60" fill="${body}"/><path d="M470 84L545 100V160L470 176Z" fill="${dark}"/>
+          <rect x="250" y="160" width="80" height="180" rx="32" fill="${body}"/><rect x="140" y="82" width="300" height="14" rx="7" fill="#fff" opacity=".25"/></g>`;
+        o+=`<g ${A('switch')}><rect x="274" y="203" width="32" height="56" rx="9" fill="#1f4f49"/><rect x="280" y="${s.on?231:209}" width="20" height="22" rx="5" fill="#f3f3f3"/></g>`;
+        [['s1',170,165],['s2',420,165],['s3',290,322]].forEach(([id,x,y])=>o+=screw(x,y,s.out[id],A,id));
+        if(s.on)o+=`<g class="air"><path d="M552 112q15 -8 30 0" stroke="#ff7a45"/><path d="M552 130q18 -8 40 0" stroke="#ffa060"/><path d="M552 148q15 -8 30 0" stroke="#ff7a45"/></g>`;
+      }else{
+        o+=`<ellipse cx="118" cy="130" rx="16" ry="56" fill="#6f7a80"/><rect x="110" y="70" width="370" height="120" rx="60" fill="${shell}"/><path d="M470 84L545 100V160L470 176Z" fill="${shell}"/><rect x="250" y="160" width="80" height="180" rx="32" fill="${shell}"/>
+          <rect x="128" y="86" width="336" height="88" rx="40" fill="#23292f"/><rect x="262" y="176" width="56" height="154" rx="22" fill="#23292f"/>
+          <g transform="translate(165 130)"><circle r="32" fill="#4a5560"/>${[0,72,144,216,288].map(a=>`<ellipse rx="7" ry="22" cy="-12" fill="#7f8c96" transform="rotate(${a})"/>`).join('')}<circle r="8" fill="#2b3036"/></g>`;
+        if(s.heater!=='none'){
+          const col=s.heater==='new'?'#f1f5f8':'#aeb4ba';
+          o+=`<g ${A('heater')}><rect x="215" y="108" width="220" height="44" rx="4" fill="#d9c89c"/><path d="${zig(228,422,130,12,8,s.heater==='broken'?[318,342]:null)}" stroke="${col}" stroke-width="3" fill="none"/>
+            ${s.heater==='broken'?'<ellipse cx="330" cy="132" rx="12" ry="7" fill="#3a2410" opacity=".5"/>':''}<circle cx="228" cy="130" r="5" fill="#cfd3d6"/><circle cx="422" cy="130" r="5" fill="#cfd3d6"/></g>`;
+        }
+        o+=`<path d="M285 330L282 268M295 330L298 268" stroke="#8a6a4a" stroke-width="4"/>
+          <rect x="270" y="232" width="40" height="36" rx="4" fill="#444"/>
+          <path d="M280 232C270 190 228 172 228 142" stroke="#d64a3a" stroke-width="4" fill="none"/><circle cx="280" cy="232" r="5" fill="#cfd3d6"/>`;
+        o+=s.wire==='off'?`<path d="M322 254C334 200 422 176 422 142" stroke="#3b6fd0" stroke-width="4" fill="none"/><circle cx="322" cy="254" r="3" fill="#d48a3a"/>`
+                         :`<path d="M300 232C320 190 422 176 422 142" stroke="#3b6fd0" stroke-width="4" fill="none"/>`;
+        o+=`<g ${A('sOut')}><circle cx="300" cy="232" r="7" fill="${s.wire==='off'?'#8d918c':'#e3e7ea'}"/></g>`;
+        o+=coverTile(A,body,'뗀 뚜껑');
+        if(s.zoom==='coil')o+=lens(470,262,330,130,ZOOM.coil);
+        if(s.zoom==='sw')o+=lens(470,262,300,232,ZOOM.sw);
+      }
+      o+=box(A,s.v==='a'?`<rect x="-34" y="-14" width="68" height="28" rx="3" fill="#d9c89c"/><path d="${zig(-28,28,0,8,6)}" stroke="#f1f5f8" stroke-width="2.4" fill="none"/>`:'');
+      o+=outlet(s,A,[290,340]);
+      return o;
+    },
+    variants:{
+      a:{complaint:'바람은 나오는데 하나도 안 뜨거워요. 머리가 안 말라요!',
+         what:'바람을 뜨겁게 만드는 꼬불꼬불한 철사가 중간에 끊어져 있었어요. 새 철사 판으로 갈았더니 다시 뜨거운 바람이 나와요.',fee:15000,
+         steps:[
+           PLUG_OUT,
+           {say:'이제 뚜껑을 열자. 드라이버로 반짝이는 나사 세 개를 하나씩 눌러서 풀어 줘.',tool:'driver',act:'multi',h:['s1','s2','s3'],run1:(s,id)=>{s.out[id]=true;}},
+           {say:'나사를 다 풀었으면 뚜껑을 살짝 들어서 떼어 내자. 몸통을 눌러 봐.',tool:'hand',act:'tap',h:'cover',run:s=>{s.open=true;}},
+           {say:'안에 꼬불꼬불한 철사 보이지? 전기가 지나가면 이 철사가 뜨거워져서 바람이 뜨거워지는 거야. '+TEST_TIP+' 철사 양쪽 끝을 눌러 봐.',tool:'tester',act:'tester',h:['hA','hB'],beep:false},
+           {say:'조용하지? 철사가 중간 어딘가에서 끊어졌다는 뜻이야. 철사를 눌러서 가까이 들여다보자.',tool:'look',act:'tap',h:'heater',run:s=>{s.zoom='coil';}},
+           {say:'저기 끊어진 데 보이지? 까맣게 탔네. 이건 이어 붙이기 힘드니까 통째로 바꾸자. 헌 철사 판을 눌러서 빼 줘.',tool:'hand',act:'tap',h:'heater',run:s=>{s.heater='none';s.zoom=null;}},
+           {say:'왼쪽 아래 부품 상자에서 새 철사 판을 꺼내서 끼우자. 상자를 눌러.',tool:'hand',act:'tap',h:'box',run:s=>{s.heater='new';}},
+           {say:'새 거라도 꼭 확인하는 습관! 테스터로 철사 양쪽 끝을 다시 눌러 봐.',tool:'tester',act:'tester',h:['hA','hB'],beep:true},
+           {say:'삐— 소리 났지? 이제 잘 이어져 있어. 옆에 둔 뚜껑을 눌러서 다시 덮자.',tool:'hand',act:'tap',h:'coverOff',run:s=>{s.open=false;}},
+           {say:'나사 세 개를 다시 조이자. 구멍을 하나씩 눌러.',tool:'driver',act:'multi',h:['s1','s2','s3'],run1:(s,id)=>{s.out[id]=false;}},
+           PLUG_IN,
+           {say:'두근두근. 손잡이 스위치를 눌러서 켜 봐!',tool:'hand',act:'tap',h:'switch',run:s=>{s.on=true;}},
+         ]},
+      b:{complaint:'스위치를 켜도 아예 아무 반응이 없어요. 어제까지 멀쩡했는데…',
+         what:'손잡이 속 스위치 뒤에 붙어 있던 전선이 납땜 자리에서 똑 떨어져 있었어요. 인두로 다시 붙였어요.',fee:15000,
+         steps:[
+           PLUG_OUT,
+           {say:'뚜껑을 열자. 드라이버로 반짝이는 나사 세 개를 하나씩 눌러서 풀어 줘.',tool:'driver',act:'multi',h:['s1','s2','s3'],run1:(s,id)=>{s.out[id]=true;}},
+           {say:'몸통을 눌러서 뚜껑을 떼어 내.',tool:'hand',act:'tap',h:'cover',run:s=>{s.open=true;}},
+           {say:'아예 안 켜진다면 전기가 오는 길 어딘가가 끊긴 거야. '+TEST_TIP+' 손잡이 안 스위치 아래쪽, 그다음 철사 오른쪽 끝을 눌러 봐.',tool:'tester',act:'tester',h:['sIn','hB'],beep:false},
+           {say:'조용하네. 이 사이 어딘가에서 끊겼어. 스위치 위쪽 동그란 자리를 눌러서 가까이 보자.',tool:'look',act:'tap',h:'sOut',run:s=>{s.zoom='sw';}},
+           {say:'찾았다! 파란 전선이 붙어 있던 자리에서 똑 떨어졌어. 인두로 녹인 납을 대서 다시 붙이자. 그 자리를 눌러.',tool:'iron',act:'solder',h:'sOut',run:s=>{s.wire='ok';s.zoom=null;}},
+           {say:'잘 붙었네! 진짜 이어졌는지 테스터로 아까 그 두 군데를 다시 눌러 봐.',tool:'tester',act:'tester',h:['sIn','hB'],beep:true},
+           {say:'삐— 이제 전기가 끝까지 가. 옆에 둔 뚜껑을 눌러서 덮자.',tool:'hand',act:'tap',h:'coverOff',run:s=>{s.open=false;}},
+           {say:'나사 세 개를 다시 조이자.',tool:'driver',act:'multi',h:['s1','s2','s3'],run1:(s,id)=>{s.out[id]=false;}},
+           PLUG_IN,
+           {say:'스위치를 눌러서 켜 봐!',tool:'hand',act:'tap',h:'switch',run:s=>{s.on=true;}},
+         ]},
+    }},
+
+  fan:{
+    name:'선풍기',color:'#f2f2ee',
+    pts:{cA:[292,345],cB:[308,345]},
+    init:v=>({plugged:true,open:false,out:{},cap:v==='a'?'bad':'ok',dirt:v==='b'?1:0,zoom:null,on:false}),
+    draw(s,A){
+      let o=`<g class="${s.on?'spin':''}" style="transform-box:view-box;transform-origin:300px 150px">${[0,120,240].map(a=>`<ellipse cx="300" cy="80" rx="34" ry="70" fill="#8fc7e8" opacity=".85" transform="rotate(${a} 300 150)"/>`).join('')}</g>
+        <circle cx="300" cy="150" r="118" fill="none" stroke="#c9d2d6" stroke-width="5"/><circle cx="300" cy="150" r="82" fill="none" stroke="#c9d2d6" stroke-width="2"/>
+        ${Array.from({length:16},(_,i)=>{const a=i*Math.PI/8;return `<line x1="${300+60*Math.cos(a)}" y1="${150+60*Math.sin(a)}" x2="${300+118*Math.cos(a)}" y2="${150+118*Math.sin(a)}" stroke="#c9d2d6" stroke-width="1.5"/>`;}).join('')}
+        <rect x="292" y="262" width="16" height="64" fill="#cfd6da"/>`;
+      const motorOpen=s.open&&s.v==='a',baseOpen=s.open&&s.v==='b';
+      if(!motorOpen){
+        o+=`<g ${A('mcover')}><circle cx="300" cy="150" r="58" fill="#f2f2ee" stroke="#c9cfd2" stroke-width="2"/><circle cx="300" cy="150" r="40" fill="none" stroke="#dde1e3" stroke-width="2"/></g>`;
+        if(s.v==='a')[['m1',300,108],['m2',262,172],['m3',338,172]].forEach(([id,x,y])=>o+=screw(x,y,s.out[id],A,id));
+      }else{
+        o+=`<circle cx="300" cy="150" r="58" fill="#2f353b"/><circle cx="300" cy="150" r="38" fill="none" stroke="#c47a3a" stroke-width="12"/><circle cx="300" cy="150" r="9" fill="#9aa1a6"/>`;
+        if(s.cap!=='none')o+=`<g ${A('cap')}><rect x="324" y="110" width="26" height="46" rx="6" fill="${s.cap==='new'?'#30343a':'#2b2b2b'}"/>${s.cap==='bad'?'<path d="M324 112Q337 92 350 112z" fill="#5a5a5a"/><path d="M346 116q4 16 0 30" stroke="#8a5a20" stroke-width="4" fill="none"/>':'<ellipse cx="337" cy="112" rx="13" ry="4" fill="#666"/>'}</g>`;
+      }
+      o+=`<rect x="190" y="320" width="220" height="50" rx="14" fill="#f2f2ee"/>`;
+      o+=`<g ${A('btn')}><rect x="285" y="309" width="30" height="13" rx="4" fill="${s.on?'#4bb0e6':'#9aa5ab'}"/></g><rect x="245" y="309" width="30" height="13" rx="4" fill="#9aa5ab"/><rect x="325" y="309" width="30" height="13" rx="4" fill="#9aa5ab"/>`;
+      if(!baseOpen){
+        o+=`<g ${A('bpanel')}><rect x="228" y="330" width="144" height="32" rx="7" fill="#e1e3df" stroke="#c9cfd2"/></g>`;
+        if(s.v==='b')[['b1',240,346],['b2',360,346]].forEach(([id,x,y])=>o+=screw(x,y,s.out[id],A,id));
+      }else{
+        o+=`<rect x="228" y="330" width="144" height="32" rx="7" fill="#2f353b"/>`;
+        [260,300,340].forEach(x=>{o+=`<rect x="${x-12}" y="338" width="10" height="16" rx="2" fill="#d6b25a"/><rect x="${x+2}" y="338" width="10" height="16" rx="2" fill="#d6b25a"/>`;});
+        o+=`<g ${A('contact')}><rect x="286" y="334" width="28" height="24" fill="transparent"/><ellipse cx="300" cy="346" rx="16" ry="10" fill="#111" opacity="${(s.dirt*.9).toFixed(2)}"/></g>`;
+        if(s.dirt<=0)o+=`<path d="M318 334l3 -6 3 6 6 3 -6 3 -3 6 -3 -6 -6 -3z" fill="#fff8c0"/>`;
+      }
+      if(s.open)o+=coverTile(A,'#f2f2ee',s.v==='a'?'뗀 뒤 뚜껑':'뗀 아래 판');
+      if(s.zoom==='cap')o+=lens(480,110,337,112,ZOOM.cap);
+      o+=box(A,s.v==='a'?'<rect x="-11" y="-20" width="22" height="40" rx="5" fill="#30343a"/><ellipse cy="-19" rx="11" ry="4" fill="#777"/>':'');
+      o+=outlet(s,A,[410,345]);
+      return o;
+    },
+    variants:{
+      a:{complaint:'날개가 안 돌고 "웅—" 소리만 나요. 손으로 밀어 주면 그제야 돌아요.',
+         what:'모터가 처음 돌기 시작할 때 힘을 보태 주는 작은 통이 볼록 부풀어서 망가져 있었어요. 새 통으로 갈았어요.',fee:18000,
+         steps:[
+           PLUG_OUT,
+           {say:'웅 소리가 난다는 건 모터에 전기는 가는데 돌기 시작할 힘이 없다는 거야. 모터 뒤 뚜껑을 열자. 나사 세 개를 풀어 줘.',tool:'driver',act:'multi',h:['m1','m2','m3'],run1:(s,id)=>{s.out[id]=true;}},
+           {say:'가운데 둥근 뚜껑을 눌러서 떼어 내.',tool:'hand',act:'tap',h:'mcover',run:s=>{s.open=true;}},
+           {say:'구리색 고리가 모터야. 그 옆에 붙은 작은 검정 통 보이지? 모터가 처음 돌 때 힘을 보태 주는 부품이야. 눌러서 가까이 보자.',tool:'look',act:'tap',h:'cap',run:s=>{s.zoom='cap';}},
+           {say:'윗부분이 볼록 부풀고 갈색 물이 새어 나왔지? 이렇게 되면 힘을 못 보태 줘. 눌러서 빼자.',tool:'hand',act:'tap',h:'cap',run:s=>{s.cap='none';s.zoom=null;}},
+           {say:'부품 상자에서 새 통을 꺼내서 같은 자리에 끼우자.',tool:'hand',act:'tap',h:'box',run:s=>{s.cap='new';}},
+           {say:'좋아. 옆에 둔 뚜껑을 눌러서 다시 덮자.',tool:'hand',act:'tap',h:'coverOff',run:s=>{s.open=false;}},
+           {say:'나사 세 개를 다시 조이자.',tool:'driver',act:'multi',h:['m1','m2','m3'],run1:(s,id)=>{s.out[id]=false;}},
+           PLUG_IN,
+           {say:'가운데 버튼을 눌러 봐!',tool:'hand',act:'tap',h:'btn',run:s=>{s.on=true;}},
+         ]},
+      b:{complaint:'버튼을 눌러도 대부분 아무 반응이 없어요. 여러 번 꾹꾹 누르면 가끔 켜져요.',
+         what:'버튼 밑 쇠붙이에 까만 때가 껴서 전기가 잘 안 통했어요. 깨끗이 닦아 줬어요.',fee:12000,
+         steps:[
+           PLUG_OUT,
+           {say:'버튼이 말썽이면 버튼 밑을 봐야지. 받침대 앞쪽 판의 나사 두 개를 풀어 줘.',tool:'driver',act:'multi',h:['b1','b2'],run1:(s,id)=>{s.out[id]=true;}},
+           {say:'판을 눌러서 떼어 내.',tool:'hand',act:'tap',h:'bpanel',run:s=>{s.open=true;}},
+           {say:'노란 쇠붙이들 보이지? 버튼을 누르면 이 쇠붙이 두 개가 서로 닿아서 전기가 흘러. '+TEST_TIP+' 가운데 쇠붙이 왼쪽, 오른쪽을 눌러 봐.',tool:'tester',act:'tester',h:['cA','cB'],beep:false},
+           {say:'조용하지? 까만 때가 껴서 닿아도 전기가 안 통하는 거야. 솔로 여러 번 문질러서 닦아 줘. 까만 곳을 계속 눌러!',tool:'brush',act:'scrub',h:'contact',n:6},
+           {say:'반짝반짝해졌다! 테스터로 다시 확인해 보자.',tool:'tester',act:'tester',h:['cA','cB'],beep:true},
+           {say:'삐— 이제 잘 통해. 옆에 둔 판을 눌러서 다시 덮자.',tool:'hand',act:'tap',h:'coverOff',run:s=>{s.open=false;}},
+           {say:'나사 두 개를 다시 조이자.',tool:'driver',act:'multi',h:['b1','b2'],run1:(s,id)=>{s.out[id]=false;}},
+           PLUG_IN,
+           {say:'가운데 버튼을 딱 한 번만 눌러 봐!',tool:'hand',act:'tap',h:'btn',run:s=>{s.on=true;}},
+         ]},
+    }},
+
+  kettle:{
+    name:'전기포트',color:'#cfd4d8',
+    pts:{dA:[338,150],dB:[362,150]},
+    init:v=>({plugged:true,view:'side',open:false,out:{},disc:v==='a'?'bad':'ok',wire:v==='b'?'burnt':'ok',zoom:null,on:false}),
+    draw(s,A){
+      let o='';
+      if(s.view==='side'){
+        o+=`<ellipse cx="300" cy="334" rx="150" ry="24" fill="#2f353b"/><ellipse cx="300" cy="326" rx="140" ry="16" fill="#454c53"/>
+          <g ${A('kettle')}><path d="M205 95Q300 80 395 95L415 300Q300 318 185 300Z" fill="#e9edf0" stroke="#b9c1c6" stroke-width="2"/>
+          <path d="M205 110L148 92L158 122L208 152Z" fill="#dfe4e7"/><path d="M395 112C472 112 474 278 410 286" stroke="#2f353b" stroke-width="22" fill="none" stroke-linecap="round"/>
+          <ellipse cx="300" cy="92" rx="96" ry="14" fill="#d5dbdf"/><rect x="286" y="72" width="28" height="14" rx="6" fill="#2f353b"/>
+          <rect x="330" y="140" width="14" height="130" rx="7" fill="#9fd3ea"/></g>
+          <g ${A('switch')}><rect x="418" y="258" width="28" height="18" rx="5" fill="${s.on?'#ff6a3d':'#555b61'}"/></g>`;
+        if(s.on)o+=`<g class="steam"><path d="M280 70q-12 -16 0 -32t0 -30"/><path d="M310 66q-12 -16 0 -32t0 -28"/></g>`;
+        o+=outlet(s,A,[440,330]);
+      }else{
+        o+=`<text class="lbl" x="300" y="22" text-anchor="middle">뒤집은 포트 바닥</text>`;
+        if(!s.open){
+          o+=`<g ${A('plate')}><circle cx="300" cy="200" r="132" fill="#cfd4d8" stroke="#9aa3a8" stroke-width="3"/><circle cx="300" cy="200" r="100" fill="none" stroke="#b9c1c6" stroke-width="2"/><circle cx="300" cy="200" r="30" fill="#b9c1c6"/></g>`;
+          [['k1',300,94],['k2',392,252],['k3',208,252]].forEach(([id,x,y])=>o+=screw(x,y,s.out[id],A,id));
+        }else{
+          o+=`<circle cx="300" cy="200" r="132" fill="#3a3f45"/><circle cx="300" cy="200" r="90" fill="none" stroke="#b8743a" stroke-width="14"/>
+            <rect x="268" y="180" width="64" height="40" rx="6" fill="#1d1f22"/><circle cx="285" cy="200" r="5" fill="#cfd3d6"/><circle cx="315" cy="200" r="5" fill="#cfd3d6"/>
+            <path d="M315 196L338 150M362 150L380 156" stroke="#e0a030" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+          if(s.disc!=='none')o+=`<g ${A('disc')}><circle cx="350" cy="150" r="16" fill="${s.disc==='bad'?'#9ea5ab':'#dfe4e8'}" stroke="#6f777d" stroke-width="2"/>${s.disc==='bad'?'<ellipse cx="352" cy="151" rx="8" ry="5" fill="#2a1f14" opacity=".7"/>':''}<circle cx="338" cy="150" r="3.5" fill="#cfd3d6"/><circle cx="362" cy="150" r="3.5" fill="#cfd3d6"/></g>`;
+          const W='stroke="#e0a030" stroke-width="7" fill="none" stroke-linecap="round"';
+          if(s.wire==='ok')o+=`<path d="M285 205L212 205" ${W}/>`;
+          else{
+            o+=`<path d="M285 205L264 205M234 205L212 205" ${W}/>`;
+            if(s.wire==='burnt')o+=`<g ${A('wire')}><rect x="230" y="196" width="38" height="18" rx="8" fill="#1b1410"/><ellipse cx="249" cy="196" rx="24" ry="7" fill="#000" opacity=".35"/></g>`;
+            else{
+              const tip=s.wire==='cut'?'#e0a030':'#d48a3a';
+              o+=`<g ${A('wireEnd')}><rect x="228" y="192" width="42" height="26" fill="transparent"/>`+
+                (s.wire==='fixed'?`<path d="M262 205H236" stroke="#f0c050" stroke-width="7" stroke-linecap="round"/><circle cx="264" cy="205" r="6" fill="#e3e7ea"/><circle cx="234" cy="205" r="6" fill="#e3e7ea"/>`
+                 :`<path d="M262 205h5M230 205h-5" stroke="${tip}" stroke-width="${s.wire==='cut'?7:3}" stroke-linecap="round"/>`)+'</g>';
+            }
+          }
+          o+=coverTile(A,'#cfd4d8','뗀 바닥판');
+        }
+        if(s.zoom==='disc')o+=lens(510,110,350,150,ZOOM.disc);
+        if(s.zoom==='burnt')o+=lens(510,110,249,205,ZOOM.burnt);
+        o+=outlet(s,A,null);
+      }
+      o+=box(A,s.v==='a'?'<circle r="16" fill="#dfe4e8" stroke="#6f777d" stroke-width="2"/>':'<path d="M-30 0H30" stroke="#f0c050" stroke-width="7" stroke-linecap="round"/>');
+      return o;
+    },
+    variants:{
+      a:{complaint:'물이 하나도 안 데워져요. 스위치 불도 안 들어와요.',
+         what:'물 없이 끓이면 너무 뜨거워지는데, 그때 전기를 끊어 주는 은색 안전 부품이 고장 나 있었어요. 새 걸로 갈았어요.',fee:16000,
+         steps:[
+           PLUG_OUT,
+           {say:'포트는 바닥에 부품이 다 들어 있어. 포트를 눌러서 뒤집자.',tool:'hand',act:'tap',h:'kettle',run:s=>{s.view='bottom';}},
+           {say:'바닥판 나사 세 개를 풀어 줘.',tool:'driver',act:'multi',h:['k1','k2','k3'],run1:(s,id)=>{s.out[id]=true;}},
+           {say:'바닥판을 눌러서 떼어 내.',tool:'hand',act:'tap',h:'plate',run:s=>{s.open=true;}},
+           {say:'구리색 큰 고리가 물을 데우는 판이야. 오른쪽 위에 작은 은색 동그라미 보이지? 물 없이 끓여서 너무 뜨거워지면 전기를 끊어 주는 안전 부품이야. '+TEST_TIP+' 은색 부품 왼쪽, 오른쪽을 눌러 봐.',tool:'tester',act:'tester',h:['dA','dB'],beep:false},
+           {say:'조용하네. 이 안전 부품이 전기를 막고 있어. 눌러서 가까이 보자.',tool:'look',act:'tap',h:'disc',run:s=>{s.zoom='disc';}},
+           {say:'까맣게 타고 금이 갔지? 한번 너무 뜨거워지면서 망가진 거야. 눌러서 빼자.',tool:'hand',act:'tap',h:'disc',run:s=>{s.disc='none';s.zoom=null;}},
+           {say:'부품 상자에서 새 안전 부품을 꺼내 끼우자.',tool:'hand',act:'tap',h:'box',run:s=>{s.disc='new';}},
+           {say:'테스터로 새 부품 양쪽을 다시 눌러 봐.',tool:'tester',act:'tester',h:['dA','dB'],beep:true},
+           {say:'삐— 좋아! 옆에 둔 바닥판을 눌러서 덮자.',tool:'hand',act:'tap',h:'coverOff',run:s=>{s.open=false;}},
+           {say:'나사 세 개를 다시 조여.',tool:'driver',act:'multi',h:['k1','k2','k3'],run1:(s,id)=>{s.out[id]=false;}},
+           {say:'바닥을 눌러서 포트를 다시 바로 세우자.',tool:'hand',act:'tap',h:'plate',run:s=>{s.view='side';}},
+           PLUG_IN,
+           {say:'손잡이 아래 스위치를 눌러 봐!',tool:'hand',act:'tap',h:'switch',run:s=>{s.on=true;}},
+         ]},
+      b:{complaint:'선 쪽에서 타는 냄새가 나더니 그 뒤로 안 켜져요.',
+         what:'바닥 속 전선 한 군데가 타 버렸어요. 탄 부분을 잘라 내고 새 전선 조각을 납땜으로 이어 붙였어요.',fee:17000,
+         steps:[
+           PLUG_OUT,
+           {say:'타는 냄새면 바닥 속을 봐야 해. 포트를 눌러서 뒤집자.',tool:'hand',act:'tap',h:'kettle',run:s=>{s.view='bottom';}},
+           {say:'바닥판 나사 세 개를 풀어 줘.',tool:'driver',act:'multi',h:['k1','k2','k3'],run1:(s,id)=>{s.out[id]=true;}},
+           {say:'바닥판을 눌러서 떼어 내.',tool:'hand',act:'tap',h:'plate',run:s=>{s.open=true;}},
+           {say:'왼쪽 노란 전선에 까만 부분 보이지? 눌러서 가까이 보자.',tool:'look',act:'tap',h:'wire',run:s=>{s.zoom='burnt';}},
+           {say:'껍질까지 새까맣게 탔네. 탄 부분은 전기가 잘 안 통하고 위험해. 가위로 까만 부분을 눌러서 잘라 내자.',tool:'scissors',act:'tap',h:'wire',run:s=>{s.wire='cut';s.zoom=null;}},
+           {say:'잘라 낸 양쪽 끝의 껍질을 살짝 벗겨야 납이 붙어. 끊긴 자리를 눌러서 껍질을 벗기자.',tool:'scissors',act:'tap',h:'wireEnd',run:s=>{s.wire='stripped';}},
+           {say:'구리선이 보이지? 부품 상자에서 새 전선 조각을 꺼내 와.',tool:'hand',act:'tap',h:'box'},
+           {say:'새 전선 조각을 끊긴 자리에 대고 인두로 양쪽을 붙이자. 그 자리를 눌러.',tool:'iron',act:'solder',h:'wireEnd',run:s=>{s.wire='fixed';}},
+           {say:'깔끔하다! 옆에 둔 바닥판을 눌러서 덮자.',tool:'hand',act:'tap',h:'coverOff',run:s=>{s.open=false;}},
+           {say:'나사 세 개를 다시 조여.',tool:'driver',act:'multi',h:['k1','k2','k3'],run1:(s,id)=>{s.out[id]=false;}},
+           {say:'바닥을 눌러서 포트를 다시 바로 세우자.',tool:'hand',act:'tap',h:'plate',run:s=>{s.view='side';}},
+           PLUG_IN,
+           {say:'스위치를 눌러 봐!',tool:'hand',act:'tap',h:'switch',run:s=>{s.on=true;}},
+         ]},
+    }},
+};
+const JOBS=[['dryer','a'],['fan','a'],['kettle','a'],['dryer','b'],['fan','b'],['kettle','b']];
+
+/* ---------- state ---------- */
+const KEY='jeonpasa-v3';
+const P={money:0,done:[]};
+try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){P.money=d.money||0;P.done=d.done||[];}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}}
+
+const G={job:0,app:null,v:null,s:null,steps:null,i:0,pend:null,probes:[],scrub:0,busy:false};
+
+function start(j){
+  G.job=j;const[a,v]=JOBS[j];G.app=APPS[a];G.v=v;
+  G.s=G.app.init(v);G.s.v=v;G.steps=G.app.variants[v].steps;G.i=0;G.busy=false;
+  $('#complaint').textContent='“'+G.app.variants[v].complaint+'”';
+  setupStep();render();renderJobs();
+}
+function setupStep(){
+  const st=G.steps[G.i];G.probes=[];G.scrub=0;
+  G.pend=st.act==='multi'?new Set(st.h):null;
+}
+function isActive(id){
+  if(G.busy)return false;const st=G.steps[G.i];if(!st)return false;
+  if(st.act==='multi')return G.pend.has(id);
+  if(st.act==='tester')return st.h[G.probes.length]===id;
+  return st.h===id;
+}
+function A(id){return `data-h="${id}" class="hot${isActive(id)?' act':''}"`;}
+
+function render(){
+  const st=G.steps[G.i];
+  let svg=`<svg viewBox="0 0 600 400" role="img" aria-label="${G.app.name}">`+G.app.draw(G.s,A);
+  if(st&&st.act==='tester'){
+    st.h.forEach((id,k)=>{
+      const[x,y]=G.app.pts[id];const placed=k<G.probes.length;
+      svg+=placed?`<circle cx="${x}" cy="${y}" r="9" fill="${k?'#222':'#e0352b'}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y-14}" text-anchor="middle" fill="#fff" font-size="12">${k?'검정':'빨강'}</text>`
+                 :`<g ${A(id)}><circle class="tp" cx="${x}" cy="${y}" r="13"/></g>`;
+    });
+  }
+  svg+='</svg>';
+  $('#art').innerHTML=svg;
+  if(st){
+    $('#say').textContent=st.say;$('#chip').innerHTML=chip(st.tool);
+    $('#stepNo').textContent=`${G.i+1} / ${G.steps.length} 단계`;
+    $('#prog').style.width=(G.i/G.steps.length*100)+'%';
+  }
+  $('#money').textContent=won(P.money);$('#count').textContent=`${P.done.length} / ${JOBS.length}`;
+}
+function renderJobs(){
+  $('#jobs').innerHTML='';
+  JOBS.forEach(([a,v],j)=>{
+    const li=document.createElement('li'),b=document.createElement('button');b.type='button';
+    if(j===G.job)b.setAttribute('aria-current','true');
+    const done=P.done.includes(j);
+    b.innerHTML=`<span>${APPS[a].name}<small></small></span><span class="stamp${done?'':' todo'}">${done?'고침':'대기'}</span>`;
+    b.querySelector('small').textContent=APPS[a].variants[v].complaint;
+    b.onclick=()=>{if(!G.busy)start(j);};
+    li.appendChild(b);$('#jobs').appendChild(li);
+  });
+}
+
+let nudgeT=null;
+function nudge(){
+  const b=$('#bubble');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');
+  $('#nudge').textContent='거기 말고, 반짝이는 곳을 눌러 봐!';clearTimeout(nudgeT);nudgeT=setTimeout(()=>$('#nudge').textContent='',2200);
+}
+let AC=null;
+function tone(f,d,type){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.value=.06;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
+
+function next(){
+  const st=G.steps[G.i];if(st.run)st.run(G.s);
+  G.i++;$('#nudge').textContent='';
+  if(G.i>=G.steps.length){finish();return;}
+  setupStep();render();
+}
+function click(id){
+  if(G.busy||!G.steps[G.i])return;
+  if(!isActive(id)){nudge();return;}
+  const st=G.steps[G.i];
+  switch(st.act){
+    case 'tap':tone(660,.05);next();break;
+    case 'multi':
+      tone(520,.05,'triangle');G.pend.delete(id);st.run1&&st.run1(G.s,id);
+      if(!G.pend.size)next();else render();break;
+    case 'tester':
+      G.probes.push(id);render();
+      if(G.probes.length===2){
+        G.busy=true;const bp=$('#beep');bp.hidden=false;bp.className='beep '+(st.beep?'yes':'no');bp.textContent=st.beep?'삐——!':'…… (조용)';
+        if(st.beep)tone(2600,.5,'square');
+        setTimeout(()=>{bp.hidden=true;G.busy=false;next();},1500);
+      }break;
+    case 'scrub':
+      G.scrub++;G.s.dirt=Math.max(0,1-G.scrub/st.n);tone(300+G.scrub*60,.05,'triangle');
+      if(G.scrub>=st.n)next();else render();break;
+    case 'solder':solder(()=>next());break;
+  }
+}
+$('#art').addEventListener('click',e=>{const el=e.target.closest('[data-h]');if(el)click(el.dataset.h);else if(!G.busy&&G.steps[G.i])nudge();});
+
+function finish(){
+  G.busy=true;render();$('#prog').style.width='100%';
+  const v=G.app.variants[G.v],first=!P.done.includes(G.job);
+  const pay=first?v.fee:Math.round(v.fee/2);
+  P.money+=pay;if(first)P.done.push(G.job);save();
+  $('#say').textContent='됐다! 잘 작동하지? 손님이 아주 좋아하겠어.';$('#stepNo').textContent='완료';
+  tone(880,.12);setTimeout(()=>tone(1320,.2),140);
+  setTimeout(()=>{
+    $('#dnTitle').textContent=`${G.app.name} 수리 끝!`;
+    $('#dnWhat').textContent=v.what;
+    $('#dnPaid').textContent='수리비 '+won(pay);
+    $('#dnSay').textContent=P.done.length>=JOBS.length?'수리 노트를 다 채웠어! 이제 아무 물건이나 다시 골라서 연습해도 돼.':'다음 손님이 기다리고 있어.';
+    $('#done').hidden=false;$('#dnNext').focus();render();renderJobs();
+  },1800);
+}
+$('#dnNext').onclick=()=>{
+  $('#done').hidden=true;
+  let n=JOBS.findIndex((_,j)=>!P.done.includes(j));
+  if(n<0)n=(G.job+1)%JOBS.length;
+  start(n);
+};
+
+/* soldering mini-game: forgiving */
+const SD={on:false,hold:false,heat:0,z0:0,z1:0,speed:0,cb:null,last:0,lock:false};
+function solder(cb){
+  Object.assign(SD,{on:true,hold:false,heat:0,cb,lock:false,speed:100/2600,z0:45,z1:78});
+  $('#sdZone').style.left=SD.z0+'%';$('#sdZone').style.width=(SD.z1-SD.z0)+'%';
+  setMsg('버튼을 꾹 누르고 있어 봐.','');drawSD();$('#solder').hidden=false;$('#sdHold').focus();
+  SD.last=performance.now();requestAnimationFrame(tick);
+}
+function setMsg(t,c){const m=$('#sdMsg');m.textContent=t;m.className='sd-msg '+c;}
+function drawSD(){
+  $('#sdFill').style.width=SD.heat+'%';const h=SD.heat/100;
+  $('#sdBlob').setAttribute('rx',8+h*14);$('#sdBlob').setAttribute('ry',3+h*6);
+  $('#sdSmoke').classList.toggle('on',SD.hold);$('#sdHold').classList.toggle('active',SD.hold);
+}
+function tick(t){if(!SD.on)return;const dt=t-SD.last;SD.last=t;if(SD.hold){SD.heat=Math.min(100,SD.heat+dt*SD.speed);if(SD.heat>=100)release();else if(SD.heat>=SD.z0)setMsg('지금이야! 손 떼!','ok');}drawSD();requestAnimationFrame(tick);}
+function press(){if(SD.on&&!SD.lock)SD.hold=true;}
+function release(){
+  if(!SD.on||!SD.hold)return;SD.hold=false;const h=SD.heat;
+  if(h<SD.z0){setMsg('납이 아직 덜 녹았어. 조금만 더 오래 눌러 봐.','bad');SD.heat=0;}
+  else if(h<=SD.z1){setMsg('반짝반짝, 잘 붙었다!','ok');SD.lock=true;tone(1200,.08);
+    setTimeout(()=>{SD.on=false;$('#solder').hidden=true;const cb=SD.cb;SD.cb=null;cb&&cb();},700);}
+  else{setMsg('앗, 너무 오래 지졌어. 괜찮아, 한 번 더 해 보자.','bad');SD.heat=0;}
+  drawSD();
+}
+const hold=$('#sdHold');
+hold.addEventListener('pointerdown',e=>{e.preventDefault();hold.setPointerCapture&&hold.setPointerCapture(e.pointerId);press();});
+hold.addEventListener('pointerup',release);hold.addEventListener('pointercancel',release);
+hold.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(!$('#solder').hidden&&e.code==='Space'){e.preventDefault();if(!e.repeat)press();}});
+document.addEventListener('keyup',e=>{if(!$('#solder').hidden&&e.code==='Space'){e.preventDefault();release();}});
+
+let armed=false;
+$('#reset').onclick=()=>{
+  if(!armed){armed=true;$('#reset').textContent='번 돈과 수리 노트가 지워져요. 한 번 더 누르면 지웁니다';setTimeout(()=>{armed=false;$('#reset').textContent='처음부터 다시 하기';},4000);return;}
+  armed=false;$('#reset').textContent='처음부터 다시 하기';P.money=0;P.done=[];save();start(0);
+};
+
+const first=JOBS.findIndex((_,j)=>!P.done.includes(j));
+start(first<0?0:first);
+})();
+</script>
+</body>
+</html>
