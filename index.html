@@ -34,7 +34,8 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .st{width:36px;height:36px;flex:none;border-radius:10px;background:var(--panel);border:1px solid var(--line);padding:7px;color:var(--muted);transition:transform .2s}
 .st.done{color:var(--ok);background:#173a2a;border-color:#2b6a48}
 .st.now{color:var(--copper-ink);background:var(--copper);border-color:var(--copper);transform:scale(1.15)}
-.coin{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 12px;flex:none}
+.coin{position:relative;overflow:hidden;display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 12px;flex:none}
+.coin i{position:absolute;left:0;bottom:0;height:4px;background:var(--glow)}
 .coin span{width:22px;height:22px;color:var(--glow)}
 .coin b{font-size:18px;font-variant-numeric:tabular-nums;color:var(--glow)}
 
@@ -65,6 +66,11 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .over{position:absolute;inset:0;background:#0b161be6;display:grid;place-items:center;padding:16px;z-index:5;overflow:auto}
 .menu{width:min(920px,100%);display:grid;gap:14px}
 .mhead{display:flex;align-items:center;gap:12px}
+.goal{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.goal .ic{width:34px;height:34px;flex:none;color:var(--glow)}
+.goal .gbar{flex:1;height:10px;border-radius:5px;background:#0004;overflow:hidden;min-width:60px}
+.goal .gbar i{display:block;height:100%;background:var(--glow)}
+.goal b{font-size:16px;font-variant-numeric:tabular-nums;color:var(--glow);flex:none}
 .mhead h2{margin:0;font-size:24px}
 .mhead .ic{width:40px;height:40px;color:var(--copper)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
@@ -127,7 +133,7 @@ body{margin:0}
     <button class="iconbtn" id="homeBtn" type="button" aria-label="물건 고르기"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button>
     <button class="iconbtn" id="sndBtn" type="button" aria-label="소리 켜기/끄기"></button>
     <div class="strip" id="strip" aria-label="수리 순서"></div>
-    <div class="coin" aria-label="번 돈"><span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 9l2 7 2-5 2 5 2-7M7 12h10"/></svg></span><b id="money">0</b></div>
+    <div class="coin" aria-label="번 돈"><span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 9l2 7 2-5 2 5 2-7M7 12h10"/></svg></span><b id="money">0</b><i id="moneyBar"></i></div>
   </div>
 
   <div class="stage" id="stage">
@@ -151,6 +157,7 @@ body{margin:0}
         <div class="bigok"><svg class="i" viewBox="0 0 24 24" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></div>
         <div class="cause" id="winCause"></div>
         <div class="grade" id="winGrade" hidden></div>
+        <div class="grade" id="winShop" hidden></div>
         <div class="pay"><span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 9l2 7 2-5 2 5 2-7M7 12h10"/></svg></span><b id="winPay"></b></div>
         <div class="row">
           <button class="bigbtn" id="winHome" type="button" aria-label="단계 목록"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
@@ -221,6 +228,7 @@ const IC={
   mute:'<path d="M3 9h4l5-4v14l-5-4H3z"/><path d="M16 9l5 6M21 9l-5 6"/>',
   no:'<path d="M6 6l12 12M18 6L6 18"/>',
   warn:'<path d="M12 3l9 17H3z"/><path d="M12 10v4M12 17v.5"/>',
+  shop:'<path d="M3 9l2-5h14l2 5z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/>',
   q:'<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 115.2 1.5c-.6.9-1.4 1.3-1.9 2.1-.3.5-.3 1-.3 1.4"/><path d="M12 17.5v.01"/>',
 };
 const svg=(k,sw)=>`<svg class="i" viewBox="0 0 24 24"${sw?` stroke-width="${sw}"`:''}>${IC[k]}</svg>`;
@@ -230,8 +238,14 @@ const KEY='jeonpasa-3d-v2';
 const P={money:0,done:[]};
 try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){P.money=d.money||0;P.done=d.done||[];}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}}
-function showMoney(){$('#money').textContent=P.money.toLocaleString('ko-KR');}
-showMoney();
+/* 돈은 쓰는 게 아니라 모으는 목표. 전 단계 첫 수리 보상 합계가 약 65만원이라 가게 열기를 60만원에 둠 */
+const GOALS=[{at:150000,ic:'driver',n:'공구 선반'},{at:350000,ic:'look',n:'창문'},{at:600000,ic:'shop',n:'가게 간판'}];
+const GOAL=GOALS[GOALS.length-1].at;
+function showMoney(){
+  $('#money').textContent=P.money.toLocaleString('ko-KR');
+  $('#moneyBar').style.width=Math.min(1,P.money/GOAL)*100+'%';
+  applyShop();
+}
 
 let AC=null;
 function tone(f,d,type,v){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.value=v||.06;g.gain.setTargetAtTime(0,AC.currentTime+d*.7,d*.2);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
@@ -288,7 +302,30 @@ function live(m){let o=m;while(o){if(!o.visible)return false;if(o===scene)return
 /* environment */
 M_(new W.BoxGeometry(14,.2,7),mat('#7a5638',{roughness:.8}),scene,[0,-1.2,.6]);
 M_(new W.BoxGeometry(14,.02,7),mat('#2a4a44',{roughness:.9}),scene,[0,-1.09,.6]);
-M_(new W.PlaneGeometry(14,8),mat('#24363d',{roughness:1}),scene,[0,2.5,-2.5]);
+const wallMat=mat('#24363d',{roughness:1});
+M_(new W.PlaneGeometry(14,8),wallMat,scene,[0,2.5,-2.5]);
+/* 모은 돈에 따라 하나씩 나타나는 가게 꾸미기 */
+const deco={};
+deco.driver=new W.Group();deco.driver.position.set(-2.4,.3,-2.4);scene.add(deco.driver);
+M_(new W.BoxGeometry(2.4,.08,.5),mat('#8a5a33',{roughness:.9}),deco.driver,[0,0,0]);
+M_(new W.BoxGeometry(2.4,.5,.06),mat('#6d4526',{roughness:.9}),deco.driver,[0,.25,-.22]);
+[[-.8,'#e9914c'],[-.2,'#cfd6da'],[.5,'#f0c12e']].forEach(([x,c],i)=>M_(cyl(.1,.1,.42,10),mat(c),deco.driver,[x,.25,.05]));
+M_(new W.BoxGeometry(.5,.3,.3),mat('#3fb6a8'),deco.driver,[1,.19,0]);
+deco.look=new W.Group();deco.look.position.set(-3,1.7,-2.44);scene.add(deco.look);
+M_(new W.PlaneGeometry(1.5,1.1),new W.MeshBasicMaterial({color:0xbfe4f2}),deco.look);
+[[0,.58,1.7,.1],[0,-.58,1.7,.1],[-.78,0,.1,1.2],[.78,0,.1,1.2]].forEach(([x,y,w,h])=>M_(new W.BoxGeometry(w,h,.08),mat('#eceff1'),deco.look,[x,y,.02]));
+M_(new W.BoxGeometry(.08,1.2,.05),mat('#eceff1'),deco.look,[0,0,.03]);
+deco.shop=new W.Group();deco.shop.position.set(3.4,2.1,-2.42);scene.add(deco.shop);
+M_(new W.BoxGeometry(2.8,.9,.1),mat('#e9914c'),deco.shop);
+M_(new W.BoxGeometry(2.6,.7,.04),mat('#2a1608'),deco.shop,[0,0,.06]);
+M_(new W.BoxGeometry(1.2,.13,.03),mat('#ffd84a'),deco.shop,[0,0,.09],[0,0,.6]);
+M_(new W.BoxGeometry(.22,.26,.04),mat('#ffd84a'),deco.shop,[-.42,-.3,.09],[0,0,.6]);
+M_(new W.BoxGeometry(1.2,.13,.03),mat('#cfd6da'),deco.shop,[0,0,.09],[0,0,-.6]);
+M_(cyl(.17,.17,.05,12),mat('#cfd6da'),deco.shop,[-.45,.3,.09],[PI/2,0,0]);
+function applyShop(){
+  GOALS.forEach(g=>{if(deco[g.ic])deco[g.ic].visible=P.money>=g.at;});
+  wallMat.color.set(P.money>=GOAL?'#36525c':'#24363d');
+}
 const outlet=new W.Group();outlet.position.set(2.8,-.3,-2.47);scene.add(outlet);
 M_(new W.BoxGeometry(.6,.8,.05),mat('#eceff1'),outlet);
 [-.09,.09].forEach(x=>M_(cyl(.03,.03,.06,10),mat('#222'),outlet,[x,0,.02],[PI/2,0,0]));
@@ -921,10 +958,12 @@ function tweenLocal(o,pos,dur,done){const p0=o.position.clone();tween(dur,e=>o.p
 function tweenWorld(o,p1,q1,dur,done,s1){const p0=o.position.clone(),q0=o.quaternion.clone(),s0=o.scale.x;
   tween(dur,e=>{o.position.lerpVectors(p0,p1,e);o.quaternion.copy(q0).slerp(q1,e);if(s1!=null)o.scale.setScalar(s0+(s1-s0)*e);},done);}
 function awayObj(o,p,eu,dur,done){
+  buzz(50);
   o.userData.ret={parent:o.parent,p:o.position.clone(),q:o.quaternion.clone()};scene.attach(o);
   tweenWorld(o,V(p[0],p[1],p[2]),new W.Quaternion().setFromEuler(new W.Euler(eu[0],eu[1],eu[2])),dur,done);
 }
 function returnObj(o,dur,done){
+  buzz(40);
   const h=o.userData.ret;h.parent.updateMatrixWorld(true);
   const wp=h.parent.localToWorld(h.p.clone()),pq=new W.Quaternion();h.parent.getWorldQuaternion(pq);
   tweenWorld(o,wp,pq.multiply(h.q),dur,()=>{h.parent.attach(o);o.position.copy(h.p);o.quaternion.copy(h.q);done&&done();});
@@ -963,8 +1002,8 @@ function pourFromBox(target,done){
 
 /* ================= step builders ================= */
 const S={
-  unplug:()=>({ic:'plugOut',say:'안전 먼저! 콘센트에서 플러그부터 뽑아요.',act:'tap',ids:['plug'],cam:'home',run:d=>tweenWorld(plug,PLUG_OUT.p,PLUG_OUT.q,.7,d)}),
-  plugin:()=>({ic:'plugIn',say:'플러그를 다시 꽂아요.',act:'tap',ids:['plug'],cam:'home',run:d=>tweenWorld(plug,PLUG_IN.p,PLUG_IN.q,.7,()=>{tone(200,.08,'square',.05);d();})}),
+  unplug:()=>({ic:'plugOut',say:'안전 먼저! 콘센트에서 플러그부터 뽑아요.',act:'tap',ids:['plug'],cam:'home',run:d=>{buzz(40);tweenWorld(plug,PLUG_OUT.p,PLUG_OUT.q,.7,d);}}),
+  plugin:()=>({ic:'plugIn',say:'플러그를 다시 꽂아요.',act:'tap',ids:['plug'],cam:'home',run:d=>{buzz(40);tweenWorld(plug,PLUG_IN.p,PLUG_IN.q,.7,()=>{tone(200,.08,'square',.05);d();});}}),
   sOut:(ids,cam,say)=>({ic:'driver',say:say||'드라이버로 나사를 하나씩 풀어요.',act:'multi',ids,cam,run1:screwOut}),
   sIn:(ids,cam)=>({ic:'driver',say:'나사를 다시 조여요.',act:'multi',ids,cam,run1:screwIn}),
   away:(id,key,cam,say)=>({ic:'lift',say,act:'tap',ids:[id],cam,run:d=>{const m=D.mov[key];awayObj(m.get(),m.p,m.e,1,d);}}),
@@ -974,7 +1013,7 @@ const S={
   trash:(id,key,cam,say)=>({ic:'trash',say,act:'tap',ids:[id],cam,run:d=>trashSlot(key,d)}),
   insert:(key,cam,say)=>({ic:'box',say,act:'tap',ids:['box'],cam,run:d=>insertSlot(key,d)}),
   cut:(cam,say)=>({ic:'scissors',say,act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('cut');tone(1500,.05,'square',.04);buzz(50);d();}}),
-  strip:(cam,say)=>({ic:'strip',say:say||'잘린 양쪽 끝 껍질을 살짝 벗겨요.',act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('stripped');d();}}),
+  strip:(cam,say)=>({ic:'strip',say:say||'잘린 양쪽 끝 껍질을 살짝 벗겨요.',act:'tap',ids:['wfix'],cam,run:d=>{buzz(30);D.wf.set('stripped');d();}}),
   solderW:(cam,say)=>({ic:'iron',say:say||'새 선 조각을 대고 인두로 붙여요.',act:'solder',ids:['wfix'],cam,run:d=>{D.wf.set('fixed');d();}}),
   scrub:(id,n,cam,say)=>({ic:'brush',say,act:'scrub',ids:[id],n,cam}),
   picks:(ids,cam,say)=>({ic:'pick',say,act:'multi',ids,cam,run1:(id,d)=>{const h=D.hair[+id.slice(1)-1],p0=h.position.clone();tone(520+Math.random()*200,.1,'triangle',.04);buzz(25);
@@ -1368,7 +1407,7 @@ function handle(id){
   else if(st.act==='multi'){G.busy=true;G.pend.delete(id);st.run1(id,()=>{G.busy=false;if(!G.pend.size)next();});}
   else if(st.act==='tester'){
     const a=anchors[id].getWorldPosition(V(0,0,0)),pr=G.probes.length?probeB:probeR;
-    pr.position.copy(a).add(V(0,.16,0));pr.rotation.set(PI,0,0);pr.visible=true;G.probes.push(id);tone(800,.04);
+    pr.position.copy(a).add(V(0,.16,0));pr.rotation.set(PI,0,0);pr.visible=true;G.probes.push(id);tone(800,.04);buzz(20);
     if(G.probes.length===2){G.busy=true;setTimeout(()=>{
       const bp=$('#beep');bp.hidden=false;bp.className='beep '+(st.beep?'yes':'no');bp.innerHTML=svg(st.beep?'beep':'mute',2.4);
       if(st.beep)tone(2600,.7,'square',.05);else tone(120,.15,'sine',.03);
@@ -1385,11 +1424,13 @@ function finish(){
   G.busy=true;renderHud();
   const st=MACH[G.mk].stages[G.n],key=G.mk+'-'+G.n,first=!P.done.includes(key);
   const fee=12000+G.n*1500,pay=first?fee:Math.round(fee/2);
-  P.money+=pay;if(first)P.done.push(key);save();showMoney();
+  const was=P.money;P.money+=pay;if(first)P.done.push(key);save();showMoney();
+  const hit=GOALS.find(g=>was<g.at&&P.money>=g.at);
   tone(880,.15);setTimeout(()=>tone(1320,.25),160);buzz([40,60,40]);
   setTimeout(()=>{
     $('#winCause').textContent=st.cause;$('#winPay').textContent='+'+pay.toLocaleString('ko-KR');
     if(G.diagGrade){$('#winGrade').hidden=false;$('#winGrade').textContent='진단 등급 '+G.diagGrade;}else{$('#winGrade').hidden=true;}
+    $('#winShop').hidden=!hit;if(hit)$('#winShop').textContent=hit.n+' 생겼어요!';
     $('#winNext').hidden=G.n>=MACH[G.mk].stages.length-1;$('#win').hidden=false;
   },700);
 }
@@ -1399,7 +1440,8 @@ function doneCount(k){return MACH[k].stages.filter((_,i)=>P.done.includes(k+'-'+
 function isUnlocked(k){const i=MKEYS.indexOf(k);return i<=0||doneCount(MKEYS[i-1])>=2;}
 function menuMachines(){
   G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;
-  let h='<div class="cards">';
+  const left=Math.max(0,GOAL-P.money);
+  let h=`<div class="goal"><span class="ic">${svg('shop')}</span><span class="gbar"><i style="width:${Math.min(1,P.money/GOAL)*100}%"></i></span><b>${left?left.toLocaleString('ko-KR')+'원':'가게 열었어요!'}</b></div><div class="cards">`;
   MKEYS.forEach(k=>{
     const m=MACH[k],n=m.stages.length,d=doneCount(k);
     h+=isUnlocked(k)
@@ -1485,7 +1527,7 @@ function loop(){
   }
   controls.update();renderer.render(scene,camera);requestAnimationFrame(loop);
 }
-resize();startStage('dryer',0);menuMachines();
+resize();showMoney();startStage('dryer',0);menuMachines();
 loop();
 })();
 </script>
