@@ -81,6 +81,7 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .win{display:grid;justify-items:center;gap:14px;text-align:center}
 .win .bigok{width:120px;height:120px;border-radius:50%;background:var(--ok);color:#0b2a17;padding:24px;animation:pop .5s}
 .win .cause{background:var(--paper);color:var(--paper-ink);border-radius:14px;padding:10px 16px;font-weight:700;font-size:17px}
+.win .grade{background:var(--glow);color:#3a2c05;border-radius:12px;padding:6px 16px;font-weight:800;font-size:15px}
 .win .pay{display:flex;align-items:center;gap:8px;font-size:32px;font-weight:800;color:var(--glow)}
 .win .pay span{width:38px;height:38px}
 .row{display:flex;gap:12px}
@@ -98,6 +99,17 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .sres{width:52px;height:52px;border-radius:50%;padding:11px}
 .sres.ok{background:var(--ok);color:#0b2a17}
 .sres.bad{background:var(--bad);color:#2a0b06;animation:no .4s}
+
+.diagbox{display:grid;gap:12px;width:min(380px,100%)}
+.opts{display:grid;gap:10px}
+.opt{background:var(--panel-2);border:2px solid var(--line);border-radius:14px;padding:14px 18px;font-size:17px;font-weight:700;text-align:center;transition:transform .1s}
+.opt:active{transform:scale(.97)}
+.opt:disabled{cursor:not-allowed}
+.opt.wrong{opacity:.35;text-decoration:line-through;border-color:var(--bad);animation:no .4s}
+.opt.hint{border-color:var(--ok);box-shadow:0 0 0 3px #5fe08f55}
+.hintbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--glow);font-weight:700}
+.hintbtn span{width:22px;height:22px;flex:none}
+.hintbtn:disabled{opacity:.4;cursor:not-allowed}
 .nogl{display:grid;place-items:center;height:100%;color:var(--muted);padding:20px;text-align:center}
 @media (prefers-reduced-motion:reduce){.bub.pop,.beep,.win .bigok,.mentor.shake .face{animation:none}}
 [hidden]{display:none!important}
@@ -132,6 +144,7 @@ body{margin:0}
       <div class="win">
         <div class="bigok"><svg class="i" viewBox="0 0 24 24" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></div>
         <div class="cause" id="winCause"></div>
+        <div class="grade" id="winGrade" hidden></div>
         <div class="pay"><span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 9l2 7 2-5 2 5 2-7M7 12h10"/></svg></span><b id="winPay"></b></div>
         <div class="row">
           <button class="bigbtn" id="winHome" type="button" aria-label="단계 목록"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
@@ -147,6 +160,13 @@ body{margin:0}
         <div class="heat"><div class="zone" id="sdZone"></div><div class="fill" id="sdFill"></div></div>
         <div class="sres" id="sdRes" hidden></div>
         <button class="hold" id="sdHold" type="button" aria-label="꾹 누르기"><svg class="i" viewBox="0 0 24 24"><path d="M8 13V5a1.5 1.5 0 013 0v6M11 11V4a1.5 1.5 0 013 0v7M14 11V5a1.5 1.5 0 013 0v8c0 4-2 7-6 7s-6-2-7-5l-1.5-3a1.4 1.4 0 012.4-1.4L8 13"/></svg></button>
+      </div>
+    </div>
+
+    <div class="over" id="diag" hidden>
+      <div class="diagbox">
+        <div class="opts" id="diagOpts"></div>
+        <button class="hintbtn" id="diagHintBtn" type="button"></button>
       </div>
     </div>
   </div>
@@ -207,6 +227,7 @@ showMoney();
 
 let AC=null;
 function tone(f,d,type,v){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.value=v||.06;g.gain.setTargetAtTime(0,AC.currentTime+d*.7,d*.2);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
+function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
 if(!window.THREE||!THREE.OrbitControls){$('#stage').innerHTML='<div class="nogl">3D를 불러오지 못했어요. 새로고침해 주세요.</div>';return;}
 const W=THREE,V=(x,y,z)=>new W.Vector3(x,y,z);
@@ -801,15 +822,15 @@ function camTo(k,done){
   tween(.9,e=>{camera.position.lerpVectors(p0,p1,e);controls.target.lerpVectors(t0,t1,e);},done);
 }
 function screwOut(id,done){
-  const s=D.screws[id],h=s.userData.home,dir=s.userData.dir,r0=s.userData.inner.rotation.y;tone(420,.25,'triangle',.04);
+  const s=D.screws[id],h=s.userData.home,dir=s.userData.dir,r0=s.userData.inner.rotation.y;tone(420,.25,'triangle',.04);buzz(60);
   tween(.55,e=>{s.position.copy(h).addScaledVector(dir,.5*e);s.userData.inner.rotation.y=r0+e*14;},()=>{s.visible=false;done();});
 }
 function screwIn(id,done){
-  const s=D.screws[id],h=s.userData.home,dir=s.userData.dir,r0=s.userData.inner.rotation.y;s.visible=true;tone(380,.25,'triangle',.04);
+  const s=D.screws[id],h=s.userData.home,dir=s.userData.dir,r0=s.userData.inner.rotation.y;s.visible=true;tone(380,.25,'triangle',.04);buzz(60);
   tween(.55,e=>{s.position.copy(h).addScaledVector(dir,.5*(1-e));s.userData.inner.rotation.y=r0-e*14;},done);
 }
 function trashSlot(key,done){
-  const o=D.obj[key];scene.attach(o);const p=o.position.clone().add(V(-.6,2.2,.8));
+  const o=D.obj[key];scene.attach(o);const p=o.position.clone().add(V(-.6,2.2,.8));buzz(50);
   tweenWorld(o,p,o.quaternion.clone(),.8,()=>{o.visible=false;scene.remove(o);D.obj[key]=null;done();},.5);
 }
 function insertSlot(key,done){
@@ -818,12 +839,12 @@ function insertSlot(key,done){
   s.parent.updateMatrixWorld(true);
   const tp=s.parent.localToWorld(V(s.p[0],s.p[1],s.p[2])),pq=new W.Quaternion();s.parent.getWorldQuaternion(pq);
   const tq=pq.multiply(new W.Quaternion().setFromEuler(new W.Euler(s.r[0],s.r[1],s.r[2])));
-  tweenWorld(o,tp,tq,1,()=>{s.parent.attach(o);o.position.set(s.p[0],s.p[1],s.p[2]);o.rotation.set(s.r[0],s.r[1],s.r[2]);o.scale.setScalar(1);D.obj[key]=o;tone(700,.08);done();},1);
+  tweenWorld(o,tp,tq,1,()=>{s.parent.attach(o);o.position.set(s.p[0],s.p[1],s.p[2]);o.rotation.set(s.r[0],s.r[1],s.r[2]);o.scale.setScalar(1);D.obj[key]=o;tone(700,.08);buzz(40);done();},1);
 }
 function pourFromBox(target,done){
   const b=boxContent.children[0];if(!b){done();return;}
   awayObj(b,target,[0,0,0],.8,()=>{const q0=b.quaternion.clone(),q1=new W.Quaternion().setFromEuler(new W.Euler(0,0,2.0));
-    tween(.5,e=>b.quaternion.copy(q0).slerp(q1,e),()=>{tone(900,.15,'sine',.04);setTimeout(()=>returnObj(b,.8,done),350);});});
+    tween(.5,e=>b.quaternion.copy(q0).slerp(q1,e),()=>{tone(900,.15,'sine',.04);buzz(40);setTimeout(()=>returnObj(b,.8,done),350);});});
 }
 
 /* ================= step builders ================= */
@@ -838,15 +859,17 @@ const S={
   look:(id,zoom,cam,say)=>({ic:'look',say,act:'tap',ids:[id],cam,run:d=>camTo(zoom,d)}),
   trash:(id,key,cam,say)=>({ic:'trash',say,act:'tap',ids:[id],cam,run:d=>trashSlot(key,d)}),
   insert:(key,cam,say)=>({ic:'box',say,act:'tap',ids:['box'],cam,run:d=>insertSlot(key,d)}),
-  cut:(cam,say)=>({ic:'scissors',say,act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('cut');tone(1500,.05,'square',.04);d();}}),
+  cut:(cam,say)=>({ic:'scissors',say,act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('cut');tone(1500,.05,'square',.04);buzz(50);d();}}),
   strip:(cam,say)=>({ic:'strip',say:say||'잘린 양쪽 끝 껍질을 살짝 벗겨요.',act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('stripped');d();}}),
   solderW:(cam,say)=>({ic:'iron',say:say||'새 선 조각을 대고 인두로 붙여요.',act:'solder',ids:['wfix'],cam,run:d=>{D.wf.set('fixed');d();}}),
   scrub:(id,n,cam,say)=>({ic:'brush',say,act:'scrub',ids:[id],n,cam}),
-  picks:(ids,cam,say)=>({ic:'pick',say,act:'multi',ids,cam,run1:(id,d)=>{const h=D.hair[+id.slice(1)-1],p0=h.position.clone();tone(520+Math.random()*200,.1,'triangle',.04);
+  picks:(ids,cam,say)=>({ic:'pick',say,act:'multi',ids,cam,run1:(id,d)=>{const h=D.hair[+id.slice(1)-1],p0=h.position.clone();tone(520+Math.random()*200,.1,'triangle',.04);buzz(25);
     tween(.6,e=>{h.position.set(p0.x-1.6*e,p0.y+.8*e,p0.z+.4*e);},()=>{h.visible=false;d();});}}),
   tap:(ic,id,cam,say,run)=>({ic,say,act:'tap',ids:[id],cam,run}),
-  on:(id,cam,say)=>({ic:'power',say:say||'켜 봐요!',act:'tap',ids:[id],cam,run:d=>D.turnOn(()=>{G.on=true;tone(140,1.6,'sawtooth',.03);setTimeout(d,2200);})}),
+  on:(id,cam,say)=>({ic:'power',say:say||'켜 봐요!',act:'tap',ids:[id],cam,run:d=>D.turnOn(()=>{G.on=true;tone(140,1.6,'sawtooth',.03);buzz([30,40,30]);setTimeout(d,2200);})}),
+  diagnose:(correct,choices,cam,say)=>({ic:'q',say,act:'diagnose',ids:[],cam,diag:{correct,choices}}),
 };
+const DIAG_COST=3000;
 const TT='테스터로 양쪽을 대 봐요. 삐— 하면 이어진 거예요.';
 
 /* dryer helpers */
@@ -857,8 +880,8 @@ const fBackOpen=()=>[S.unplug(),S.sOut(['m1','m2','m3'],'fback','모터 뒤 뚜�
 const fBackClose=()=>[S.back('mcap','mcap','fback','뒤 뚜껑을 덮어요.'),S.sIn(['m1','m2','m3'],'fback'),S.plugin(),S.on('btn','home','가운데 버튼을 눌러 봐요!')];
 const fBaseOpen=()=>[S.unplug(),S.sOut(['b1','b2'],'base','받침대 뚜껑 나사 두 개를 풀어요.'),S.away('bcover','bcover','base','받침대 뚜껑을 떼어 내요.')];
 const fBaseClose=()=>[S.back('bcover','bcover','base','받침대 뚜껑을 덮어요.'),S.sIn(['b1','b2'],'base'),S.plugin(),S.on('btn','home','가운데 버튼을 눌러 봐요!')];
-const clipsOut=()=>({ic:'clip',say:'앞 망 양옆 걸쇠를 눌러서 풀어요.',act:'multi',ids:['k1','k2'],cam:'front',run1:(id,d)=>{const c=D.clips[id];tone(900,.05,'square',.04);tween(.3,e=>{c.rotation.y=(id==='k1'?-1:1)*1.1*e;},d);}});
-const clipsIn=()=>({ic:'clip',say:'걸쇠를 다시 채워요.',act:'multi',ids:['k1','k2'],cam:'front',run1:(id,d)=>{const c=D.clips[id];tone(900,.05,'square',.04);tween(.3,e=>{c.rotation.y=(id==='k1'?-1:1)*1.1*(1-e);},d);}});
+const clipsOut=()=>({ic:'clip',say:'앞 망 양옆 걸쇠를 눌러서 풀어요.',act:'multi',ids:['k1','k2'],cam:'front',run1:(id,d)=>{const c=D.clips[id];tone(900,.05,'square',.04);buzz(20);tween(.3,e=>{c.rotation.y=(id==='k1'?-1:1)*1.1*e;},d);}});
+const clipsIn=()=>({ic:'clip',say:'걸쇠를 다시 채워요.',act:'multi',ids:['k1','k2'],cam:'front',run1:(id,d)=>{const c=D.clips[id];tone(900,.05,'square',.04);buzz(20);tween(.3,e=>{c.rotation.y=(id==='k1'?-1:1)*1.1*(1-e);},d);}});
 const fFrontOpen=()=>[S.unplug(),clipsOut(),S.away('fgrille','fgrille','front','앞 망을 떼어 내요.')];
 const fFrontClose=()=>[S.back('fgrille','fgrille','front','앞 망을 다시 끼워요.'),clipsIn(),S.plugin(),S.on('btn','home','가운데 버튼을 눌러 봐요!')];
 /* kettle helpers */
@@ -917,7 +940,7 @@ const MACH={
       S.insert('fuse','home','새 안전 부품을 끼워요.'),
       S.test(['tA','tB'],true,'inside','다시 재 봐요.'),...dClose()]},
     {title:'탄 냄새만 나고 바람이 없어요',cause:'바람개비를 돌리는 모터가 타 버렸었어요',cfg:{motor:'bad'},box:'motor',steps:[...dOpen(),
-      S.test(['mA','mB'],false,'inside','팬을 돌리는 모터의 두 단자를 재요. '+TT),
+      S.diagnose('모터',['모터','열선(히터)','안전 부품(퓨즈)'],'inside','탄 냄새만 나고 바람이 없어요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
       S.look('motor','motorZ','inside','모터를 가까이 봐요. 까맣게 탔네요.'),
       S.away('fan','fanOut','motorZ','모터에 꽂힌 바람개비부터 빼요.'),
       S.trash('motor','motor','motorZ','탄 모터를 빼요.'),
@@ -952,6 +975,7 @@ const MACH={
       S.insert('mfuse','fback','새 안전 부품을 끼워요.'),
       S.test(['f1','f2'],true,'fback','다시 재 봐요.'),...fBackClose()]},
     {title:'돌 때 덜덜덜 흔들려요',cause:'날개 한 장에 금이 가서 무게가 안 맞았어요',cfg:{blade:'bad'},box:'blade',steps:[...fFrontOpen(),
+      S.diagnose('날개',['날개','시동 도우미 통','안전 부품'],'front','돌 때마다 덜덜덜 흔들려요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
       S.look('blade','bladeZ','front','날개를 가까이 봐요. 한 장이 깨졌네요.'),
       S.trash('blade','blade','bladeZ','깨진 날개를 빼요.'),
       S.insert('blade','front','새 날개를 꽂아요.'),...fFrontClose()]},
@@ -980,6 +1004,7 @@ const MACH={
       S.test(['wA','wB'],true,'kbottom','다시 재 봐요.'),...kClose()]},
     {title:'오래 걸리고 하얀 가루가 떠요',cause:'바닥에 하얀 물때가 두껍게 꼈었어요',cfg:{scale:true},box:'vinegar',steps:[S.unplug(),
       S.tap('lift','lid','home','뚜껑을 열어요.',d=>tween(.6,e=>{D.lid.rotation.z=1.9*e;},d)),
+      S.diagnose('물때',['물때','녹','스위치 부품'],'scaleZ','오래 걸리고 하얀 가루가 떠요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
       S.look('scale','scaleZ','home','안쪽 바닥을 봐요. 하얀 물때가 잔뜩!'),
       S.tap('drop','box','home','부품 상자에서 식초를 꺼내 부어요. 물때가 녹아요.',d=>pourFromBox([0,1.9,0],d)),
       S.scrub('scale',6,'scaleZ','녹은 물때를 문질러 닦아요.'),
@@ -1014,7 +1039,7 @@ const MACH={
       S.test(['bA','bB'],true,'panelZ','다시 재 봐요.'),
       S.back('panel','panel','panelZ','버튼판을 다시 붙여요.'),S.sIn(['p1','p2'],'panelZ'),S.plugin(),S.on('btn','home','취사 버튼을 눌러 봐요!')]},
     {title:'선을 꽂아도 됐다 안 됐다 해요',cause:'전원선 꽂는 곳의 납땜에 금이 갔었어요',cfg:{joint:true},steps:[...cOpen(),
-      S.test(['pA','pB'],false,'cbottom','선 꽂는 곳 안쪽과 전선 끝을 재요. '+TT),
+      S.diagnose('납땜 자리',['납땜 자리','고무 패킹','온도 감지 부품'],'cbottom','선을 꽂아도 됐다 안 됐다 해요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
       S.look('pj','pjZ','cbottom','동그란 납땜 자리를 봐요. 회색으로 탁하고 금이 갔어요.'),
       {ic:'iron',say:'인두로 납을 다시 녹여서 붙여요.',act:'solder',ids:['pj'],cam:'pjZ',run:d=>{const m=D.pj.material;m.color.set('#f2f5f7');m.metalness=.7;m.roughness=.2;if(D.pjCrack)D.pjCrack.visible=false;d();}},
       S.test(['pA','pB'],true,'cbottom','다시 재 봐요.'),...cClose()]},
@@ -1040,6 +1065,7 @@ const MACH={
       S.look('spill','spillZ','home','안쪽에 음료가 말라붙었어요.'),
       S.scrub('spill',7,'spillZ','물수건으로 꼼꼼히 닦아요.'),...rClose()]},
     {title:'떨어뜨렸더니 TV가 반응을 안 해요',cause:'신호 박자를 맞추는 작은 부품이 깨졌었어요',cfg:{xtal:'bad'},box:'xtal',steps:[...rOpen(),
+      S.diagnose('신호 부품',['신호 부품','건전지','버튼 접점'],'home','떨어뜨렸더니 TV가 반응을 안 해요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
       S.look('xtal','xtalZ','home','주황색 작은 부품을 봐요. 신호 박자를 맞춰 줘요. 깨졌네요.'),
       S.trash('xtal','xtal','xtalZ','깨진 부품을 빼요.'),
       S.insert('xtal','home','새 부품을 끼워요.'),...rClose()]},
@@ -1071,6 +1097,7 @@ const MACH={
     {title:'버튼이 가끔 안 눌려요',cause:'조작판 버튼 뒤 접점에 때가 껴서 전기가 안 통했어요',cfg:{pdirt:true},steps:[S.unplug(),
       S.sOut(['p1','p2'],'panelZ','조작판 나사 두 개를 풀어요.'),
       S.away('panel','panel','panelZ','조작판을 떼어 내요.'),
+      S.diagnose('버튼 접점',['버튼 접점','문 안전 스위치','메인 퓨즈'],'panelZ','버튼이 가끔 안 눌려요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
       S.test(['bA','bB'],false,'panelZ','버튼 뒤 접점 두 개를 재요. '+TT),
       S.scrub('pdirt',6,'panelZ','까만 때를 솔로 문질러요.'),
       S.test(['bA','bB'],true,'panelZ','다시 재 봐요.'),
@@ -1080,7 +1107,7 @@ const MACH={
 const MKEYS=Object.keys(MACH);
 
 /* ================= game ================= */
-const G={mk:null,n:0,steps:null,i:0,pend:null,probes:[],scrub:0,busy:true,on:false};
+const G={mk:null,n:0,steps:null,i:0,pend:null,probes:[],scrub:0,busy:true,on:false,diagWrong:0,diagHint:false,diagGrade:null};
 function fillBox(kind){
   while(boxContent.children.length)boxContent.remove(boxContent.children[0]);
   boxContent.visible=!!kind;if(!kind)return;
@@ -1099,7 +1126,7 @@ function startStage(mk,n){
   MACH[mk].build(st.cfg);
   fillBox(st.box);
   plug.position.copy(PLUG_IN.p);plug.quaternion.copy(PLUG_IN.q);
-  G.steps=st.steps;G.i=0;G.on=false;G.busy=false;tweens.length=0;
+  G.steps=st.steps;G.i=0;G.on=false;G.busy=false;G.diagGrade=null;tweens.length=0;
   parts.forEach(p=>{p.life=0;p.m.visible=false;});
   $('#note').innerHTML=`<span>${svg(MACH[mk].icon)}</span><p></p>`;$('#note p').textContent='“'+st.title+'”';
   $('#menu').hidden=true;$('#win').hidden=true;
@@ -1110,7 +1137,38 @@ function setupStep(){
   const st=G.steps[G.i];G.probes=[];G.scrub=0;probeR.visible=probeB.visible=false;
   G.pend=st.act==='multi'?new Set(st.ids):null;tester.visible=st.act==='tester';
   renderHud();
-  if(st.cam&&st.cam!==camKey){G.busy=true;camTo(st.cam,()=>{G.busy=false;});}
+  if(st.cam&&st.cam!==camKey){G.busy=true;camTo(st.cam,()=>{G.busy=false;if(st.act==='diagnose')openDiag(st.diag);});}
+  else if(st.act==='diagnose')openDiag(st.diag);
+}
+let curDiag=null;
+function openDiag(diag){
+  curDiag=diag;G.diagWrong=0;G.diagHint=false;
+  const opts=diag.choices.slice().sort(()=>Math.random()-.5);
+  $('#diagOpts').innerHTML=opts.map(c=>`<button class="opt" type="button" data-c="${c}">${c}</button>`).join('');
+  $('#diagOpts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>diagPick(b.dataset.c,b));
+  updateHintBtn();
+  $('#diag').hidden=false;
+}
+function updateHintBtn(){
+  const b=$('#diagHintBtn');
+  b.innerHTML=`<span>${svg('q')}</span>힌트 보기 (${DIAG_COST.toLocaleString('ko-KR')}원)`;
+  b.disabled=G.diagHint||P.money<DIAG_COST;
+  b.onclick=diagHint;
+}
+function diagHint(){
+  if(G.diagHint||P.money<DIAG_COST)return;
+  P.money-=DIAG_COST;save();showMoney();G.diagHint=true;tone(900,.15);buzz(40);
+  $('#diagOpts').querySelectorAll('.opt').forEach(b=>{if(b.dataset.c===curDiag.correct)b.classList.add('hint');});
+  updateHintBtn();
+}
+function diagPick(c,btn){
+  if(G.busy)return;
+  if(c===curDiag.correct){
+    const tries=G.diagWrong+1;G.diagGrade=G.diagHint?'B':(tries===1?'S':tries===2?'A':'B');
+    tone(1200,.15);buzz(30);$('#diag').hidden=true;G.busy=false;next();
+  }else{
+    G.diagWrong++;btn.classList.add('wrong');btn.disabled=true;tone(150,.2,'square',.04);buzz(80);nudge();
+  }
 }
 function activeIds(){
   if(G.busy||!G.steps||!G.steps[G.i])return[];
@@ -1143,7 +1201,7 @@ function handle(id){
       setTimeout(()=>{bp.hidden=true;G.busy=false;next();},1500);},350);}
   }
   else if(st.act==='scrub'){
-    G.scrub++;const m=D.dirt[id];tone(300+G.scrub*70,.06,'triangle',.04);
+    G.scrub++;const m=D.dirt[id];tone(300+G.scrub*70,.06,'triangle',.04);buzz(20);
     m.material.opacity=m.userData.op0*(1-G.scrub/st.n);
     if(G.scrub>=st.n){m.visible=false;next();}
   }
@@ -1154,9 +1212,10 @@ function finish(){
   const st=MACH[G.mk].stages[G.n],key=G.mk+'-'+G.n,first=!P.done.includes(key);
   const fee=12000+G.n*1500,pay=first?fee:Math.round(fee/2);
   P.money+=pay;if(first)P.done.push(key);save();showMoney();
-  tone(880,.15);setTimeout(()=>tone(1320,.25),160);
+  tone(880,.15);setTimeout(()=>tone(1320,.25),160);buzz([40,60,40]);
   setTimeout(()=>{
     $('#winCause').textContent=st.cause;$('#winPay').textContent='+'+pay.toLocaleString('ko-KR');
+    if(G.diagGrade){$('#winGrade').hidden=false;$('#winGrade').textContent='진단 등급 '+G.diagGrade;}else{$('#winGrade').hidden=true;}
     $('#winNext').hidden=G.n>=MACH[G.mk].stages.length-1;$('#win').hidden=false;
   },700);
 }
@@ -1201,9 +1260,9 @@ function sdTick(t){if(!SD.on)return;const dt=t-SD.last;SD.last=t;
 function sdPress(){if(SD.on&&!SD.lock){SD.hold=true;$('#sdRes').hidden=true;}}
 function sdRelease(){
   if(!SD.on||!SD.hold)return;SD.hold=false;const h=SD.heat,r=$('#sdRes');r.hidden=false;
-  if(h>=SD.z0&&h<=SD.z1){r.className='sres ok';r.innerHTML=svg('check',3);SD.lock=true;tone(1200,.1);
+  if(h>=SD.z0&&h<=SD.z1){r.className='sres ok';r.innerHTML=svg('check',3);SD.lock=true;tone(1200,.1);buzz(60);
     setTimeout(()=>{SD.on=false;$('#solder').hidden=true;const c=SD.cb;SD.cb=null;c&&c();},700);}
-  else{r.className='sres bad';r.innerHTML=svg('no',3);tone(150,.2,'square',.04);SD.heat=0;}
+  else{r.className='sres bad';r.innerHTML=svg('no',3);tone(150,.2,'square',.04);buzz(30);SD.heat=0;}
 }
 const hb=$('#sdHold');
 hb.addEventListener('pointerdown',e=>{e.preventDefault();hb.setPointerCapture&&hb.setPointerCapture(e.pointerId);sdPress();});
