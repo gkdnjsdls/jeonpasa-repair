@@ -871,9 +871,11 @@ function buildVacuum(cfg){
   if(cfg.swdirt)dirt(R,'swdirt',new W.BoxGeometry(.2,.1,.01),'#111',[-.2,.3,.263],[0,0,0],.85);
   if(cfg.cord)d.wf=wireFix(R,[0,-.5,-.6],[0,-.5,-.1],'#2a2d31','burnt');else tube(R,[[0,-.5,-.6],[0,-.5,-.1]],'#2a2d31');
   const hoseStart=V(.95,.05,0);
-  const clog=M_(new W.SphereGeometry(.08,10,8),mat('#5a4a30'),R,[1.3,-.55,.3]);tag(clog,'h1');anchor(R,'h1',[1.3,-.48,.3]);
-  const clog2=M_(new W.SphereGeometry(.06,10,8),mat('#6b5a3a'),R,[1.4,-.6,.2]);tag(clog2,'h2');anchor(R,'h2',[1.4,-.53,.2]);
-  d.hair=[clog,clog2];
+  if(cfg.clog){
+    const clog=M_(new W.SphereGeometry(.08,10,8),mat('#5a4a30'),R,[1.3,-.55,.3]);tag(clog,'h1');anchor(R,'h1',[1.3,-.48,.3]);
+    const clog2=M_(new W.SphereGeometry(.06,10,8),mat('#6b5a3a'),R,[1.4,-.6,.2]);tag(clog2,'h2');anchor(R,'h2',[1.4,-.53,.2]);
+    d.hair=[clog,clog2];
+  }
   tube(R,[hoseStart.toArray(),[1.3,-.3,.3],[1.5,-.6,.3]],'#8a2f28',.09);
   const hoseEnd=new W.Group();hoseEnd.position.set(1.5,-.6,.3);R.add(hoseEnd);
   M_(cyl(.1,.1,.2,20),mat('#2b2e33'),hoseEnd);tag(hoseEnd,'hoseEnd');anchor(R,'hoseEnd',[1.5,-.45,.3]);
@@ -1169,25 +1171,25 @@ const MACH={
   microwave:{name:'전자레인지',icon:'microwave',build:buildMicrowave,stages:[
     {title:'문을 닫아도 안 켜져요',cause:'문이 닫힌 걸 알려주는 안전 스위치가 망가졌었어요',cfg:{sw:'bad'},box:'mwsw',steps:[...mBayOpen('swZ','뒤판 나사 세 개를 풀어요.'),
       S.test(['swA','swB'],false,'swZ','문 안전 스위치 양쪽을 재요. '+TT),
-      S.look('mwsw','swZ','문을 닫으면 눌리는 스위치예요. 고리가 휘었어요.'),
+      S.look('mwsw','swZ','swZ','문을 닫으면 눌리는 스위치예요. 고리가 휘었어요.'),
       S.trash('mwsw','mwsw','swZ','망가진 스위치를 빼요.'),
       S.insert('mwsw','inside','새 스위치를 끼워요.'),
       S.test(['swA','swB'],true,'swZ','다시 재 봐요.'),...mBayClose('swZ')]},
     {title:'아예 먹통이에요, 불도 안 들어와요',cause:'전기를 지켜 주는 메인 퓨즈가 끊어졌었어요',cfg:{fuse:'bad'},box:'mwfuse',steps:[...mBayOpen('fuseZ','뒤판 나사 세 개를 풀어요.'),
       S.test(['fsA','fsB'],false,'fuseZ','은색 통 양쪽을 재요. '+TT),
-      S.look('mwfuse','fuseZ','너무 센 전기가 흐르면 스스로 끊어지는 안전 부품이에요.'),
+      S.look('mwfuse','fuseZ','fuseZ','너무 센 전기가 흐르면 스스로 끊어지는 안전 부품이에요.'),
       S.trash('mwfuse','mwfuse','fuseZ','끊어졌어요. 빼요.'),
       S.insert('mwfuse','inside','새 안전 부품을 끼워요.'),
       S.test(['fsA','fsB'],true,'fuseZ','다시 재 봐요.'),...mBayClose('fuseZ')]},
     {title:'돌아가긴 하는데 음식이 안 뜨거워요',cause:'마이크로파를 만드는 가열 부품이 고장 났었어요',cfg:{mag:'bad'},box:'mag',steps:[...mBayOpen('magZ','뒤판 나사 세 개를 풀어요.'),
       S.test(['mgA','mgB'],false,'magZ','가열 부품 양쪽 단자를 재요. '+TT),
-      S.look('mag','magZ','음식을 데우는 열을 만드는 부품이에요. 까맣게 탔어요.'),
+      S.look('mag','magZ','magZ','음식을 데우는 열을 만드는 부품이에요. 까맣게 탔어요.'),
       S.trash('mag','mag','magZ','탄 부품을 빼요.'),
       S.insert('mag','inside','새 부품을 끼워요.'),
       S.test(['mgA','mgB'],true,'magZ','다시 재 봐요.'),...mBayClose('magZ')]},
     {title:'접시가 안 돌아요',cause:'회전판 바퀴에 음식 찌꺼기와 기름때가 굳어 있었어요',cfg:{dirty:true},steps:[S.unplug(),mOpen(),
       S.away('tray','tray','trayZ','회전판을 들어내요.'),
-      S.look('gunk2','trayZ','바퀴가 구르는 테두리를 가까이 봐요. 찌꺼기가 굳었네요.'),
+      S.look('gunk2','trayZ','trayZ','바퀴가 구르는 테두리를 가까이 봐요. 찌꺼기가 굳었네요.'),
       S.scrub('gunk2',6,'trayZ','굳은 때를 솔로 문질러요.'),
       S.back('tray','tray','trayZ','회전판을 다시 올려요.'),mClose(),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')]},
     {title:'버튼이 가끔 안 눌려요',cause:'조작판 버튼 뒤 접점에 때가 껴서 전기가 안 통했어요',cfg:{pdirt:true},steps:[S.unplug(),
@@ -1236,13 +1238,13 @@ const MACH={
       S.back('door','door','doorZ','뚜껑을 닫아요.'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
     {title:'쓰다가 뜨거워지며 뚝 꺼져요',cause:'모터 과열 안전 부품이 끊어졌었어요',cfg:{fuse:'bad'},box:'vfuse',steps:[...vPanelOpen(),
       S.test(['vfA','vfB'],false,'fuseZ','은색 통 양쪽을 재요. '+TT),
-      S.look('vfuse','fuseZ','너무 뜨거워지면 스스로 끊어져서 불을 막는 부품이에요.'),
+      S.look('vfuse','fuseZ','fuseZ','너무 뜨거워지면 스스로 끊어져서 불을 막는 부품이에요.'),
       S.trash('vfuse','vfuse','fuseZ','끊어졌어요. 빼요.'),
       S.insert('vfuse','panelZ','새 안전 부품을 끼워요.'),
       S.test(['vfA','vfB'],true,'fuseZ','다시 재 봐요.'),...vPanelClose()]},
     {title:'소리만 크고 전혀 안 빨려요',cause:'호스 속이 먼지·이물질로 꽉 막혀 있었어요',cfg:{clog:true},steps:[S.unplug(),
       S.away('hoseEnd','hoseEnd','clogZ','호스 끝을 빼요.'),
-      S.look('h1','clogZ','호스 속을 들여다봐요. 뭔가 꽉 막혔어요.'),
+      S.look('h1','clogZ','clogZ','호스 속을 들여다봐요. 뭔가 꽉 막혔어요.'),
       S.picks(['h1','h2'],'clogZ','막힌 덩어리를 하나씩 뽑아내요.'),
       S.back('hoseEnd','hoseEnd','clogZ','호스 끝을 다시 꽂아요.'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
     {title:'버튼을 눌러도 아무 반응이 없어요',cause:'전원 스위치 접점에 때가 껴서 전기가 안 통했어요',cfg:{swdirt:true},steps:[...vPanelOpen(),
