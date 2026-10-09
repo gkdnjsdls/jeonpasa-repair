@@ -1,0 +1,13 @@
+{
+  "name": "가전 고치기",
+  "short_name": "가전 고치기",
+  "description": "고장 난 가전을 3D로 열어 보고 고치는 수리 게임",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#13222a",
+  "theme_color": "#e9914c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
