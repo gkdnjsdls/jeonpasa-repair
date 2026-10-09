@@ -1421,7 +1421,7 @@ function menuStages(mk){
 
 $('#homeBtn').onclick=menuMachines;
 $('#sndBtn').onclick=toggleSnd;syncSndBtn();
-document.addEventListener('pointerdown',startAmbient,{once:true});
+document.addEventListener('pointerup',startAmbient,{once:true});
 $('#winHome').onclick=()=>menuStages(G.mk);
 $('#winNext').onclick=()=>startStage(G.mk,G.n+1);
 
