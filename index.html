@@ -71,7 +71,6 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .card{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:16px 12px 14px;display:grid;justify-items:center;gap:8px;text-align:center;transition:transform .15s,border-color .15s}
 .card:hover{transform:translateY(-4px);border-color:var(--copper)}
 .card.locked{opacity:.5;cursor:not-allowed}
-.card.sel{border-color:var(--ok);box-shadow:0 0 0 3px #5fe08f55}
 .card.locked:hover{transform:none;border-color:var(--line)}
 .card .big{width:80px;height:80px;color:#3fb6a8}
 .card.locked .big{color:var(--muted)}
@@ -1383,13 +1382,8 @@ function menuMachines(){
       ?`<button class="card" type="button" data-m="${k}"><span class="big">${svg(m.icon,1.5)}</span><b>${m.name}</b><small>${d} / ${n}</small><span class="bar"><i style="width:${d/n*100}%"></i></span></button>`
       :`<button class="card locked" type="button" disabled><span class="big">${svg('q',1.5)}</span><b>?</b><small>2단계 깨면 열려요</small></button>`;
   });
-  const owned=ownedParts();
-  h+=owned.length
-    ?`<button class="card" type="button" id="buildCard"><span class="big">${svg('box',1.5)}</span><b>나만의 기기</b><small>부품 ${owned.length}개</small></button>`
-    :`<button class="card locked" type="button" disabled><span class="big">${svg('box',1.5)}</span><b>나만의 기기</b><small>부품을 먼저 모아요</small></button>`;
   $('#menuIn').innerHTML=h+'</div>';
   $('#menuIn').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>menuStages(b.dataset.m));
-  const bc=$('#buildCard');if(bc)bc.onclick=menuBuild;
 }
 function menuStages(mk){
   G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;const m=MACH[mk];
@@ -1401,51 +1395,6 @@ function menuStages(mk){
   $('#mBack').onclick=menuMachines;
 }
 
-/* ================= build-your-own ================= */
-const PART_LABEL={heater:'열선',fuse:'안전 퓨즈',motor:'모터',cap:'시동 도우미 통',mfuse:'안전 퓨즈',blade:'날개',
-  disc:'안전 부품',swmod:'스위치 부품',rfuse:'안전 퓨즈',gasket:'고무 패킹',bat:'건전지',xtal:'신호 부품',
-  mwsw:'문 안전 스위치',mwfuse:'메인 퓨즈',mag:'가열 부품',tfuse:'안전 퓨즈',latch:'걸쇠',theater:'열선',vfuse:'안전 퓨즈'};
-const BUILD_COST=5000,BUILD_ADJ=['반짝이는','덜컹거리는','조용한','수상한','똑똑한','말 안 듣는','귀여운','든든한'],BUILD_NOUN=['기계','발명품','친구','상자','녀석'];
-const randOf=arr=>arr[Math.floor(Math.random()*arr.length)];
-function ownedParts(){
-  const out=[];
-  MKEYS.forEach(mk=>{MACH[mk].stages.forEach((s,i)=>{if(s.box&&PART_LABEL[s.box]&&P.done.includes(mk+'-'+i))out.push({box:s.box,label:PART_LABEL[s.box],icon:MACH[mk].icon});});});
-  return out;
-}
-let buildSel=new Set();
-function menuBuild(){
-  G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;
-  buildSel=new Set();
-  const owned=ownedParts();
-  let h=`<div class="mhead"><button class="iconbtn" type="button" id="mBack" aria-label="물건 고르기">${svg('back')}</button><span class="ic">${svg('box')}</span><h2>나만의 기기</h2></div><div class="cards">`;
-  owned.forEach((p,i)=>{h+=`<button class="card" type="button" data-i="${i}"><span class="big">${svg(p.icon,1.5)}</span><b>${p.label}</b></button>`;});
-  $('#menuIn').innerHTML=h+`</div><button class="hintbtn" id="buildGoBtn" type="button"></button>`;
-  const refresh=()=>{const b=$('#buildGoBtn');b.innerHTML=`<span>${svg('box')}</span>만들기 (${BUILD_COST.toLocaleString('ko-KR')}원)`;b.disabled=buildSel.size<2||P.money<BUILD_COST;};
-  $('#menuIn').querySelectorAll('[data-i]').forEach(c=>c.onclick=()=>{
-    const i=+c.dataset.i;
-    if(buildSel.has(i)){buildSel.delete(i);c.classList.remove('sel');}
-    else if(buildSel.size<3){buildSel.add(i);c.classList.add('sel');}
-    refresh();
-  });
-  $('#buildGoBtn').onclick=()=>{
-    if(buildSel.size<2||P.money<BUILD_COST)return;
-    P.money-=BUILD_COST;save();showMoney();tone(900,.2);buzz(40);
-    showBuildResult([...buildSel].map(i=>owned[i]));
-  };
-  refresh();
-  $('#mBack').onclick=menuMachines;
-}
-function showBuildResult(parts){
-  const name=randOf(BUILD_ADJ)+' '+parts.map(p=>p.label).join('·')+' '+randOf(BUILD_NOUN);
-  let h=`<div class="mhead"><span class="ic">${svg('box')}</span><h2>완성!</h2></div><div class="win" style="padding:0">`;
-  h+=`<div class="bigok">${svg('check',3)}</div><div class="cause">${name}</div><div class="row">`;
-  parts.forEach(p=>h+=`<span class="bigbtn" aria-hidden="true">${svg(p.icon,1.5)}</span>`);
-  h+=`</div><div class="row"><button class="bigbtn go" id="buildAgain" type="button" aria-label="또 만들기">${svg('box',1.5)}</button><button class="bigbtn" id="buildBack" type="button" aria-label="뒤로">${svg('back')}</button></div></div>`;
-  $('#menuIn').innerHTML=h;
-  tone(1200,.15);setTimeout(()=>tone(1500,.2),140);
-  $('#buildAgain').onclick=menuBuild;
-  $('#buildBack').onclick=menuMachines;
-}
 $('#homeBtn').onclick=menuMachines;
 $('#winHome').onclick=()=>menuStages(G.mk);
 $('#winNext').onclick=()=>startStage(G.mk,G.n+1);
