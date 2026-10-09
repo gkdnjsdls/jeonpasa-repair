@@ -1,0 +1,1518 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>가전 고치기</title>
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e9914c">
+<style>
+/* Layout: 화면 가득 3D 작업대. 위 단계 아이콘 줄, 왼쪽 아래 기사님 말풍선(아이콘+한 줄), 오른쪽 위 손님 쪽지 */
+:root{
+  color-scheme: dark;
+  --bg:#13222a; --panel:#1c2f36; --panel-2:#243c44; --line:#35525c;
+  --ink:#eef3ef; --muted:#8fa6a2;
+  --copper:#e9914c; --copper-ink:#2a1608;
+  --paper:#f4ecd8; --paper-t:#f4ecd8d9; --paper-ink:#2b241a;
+  --glow:#ffd84a; --ok:#5fe08f; --bad:#ff6f5c;
+}
+html,body{background:var(--bg);color:var(--ink);height:100%}
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.game{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:12px 20px;display:grid;gap:10px}
+.top{display:flex;align-items:center;gap:10px;min-width:0}
+.iconbtn{width:46px;height:46px;flex:none;border-radius:12px;background:var(--panel);border:1px solid var(--line);padding:9px}
+.strip{flex:1;display:flex;gap:6px;overflow-x:auto;padding:4px 2px;min-width:0;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.st{width:36px;height:36px;flex:none;border-radius:10px;background:var(--panel);border:1px solid var(--line);padding:7px;color:var(--muted);transition:transform .2s}
+.st.done{color:var(--ok);background:#173a2a;border-color:#2b6a48}
+.st.now{color:var(--copper-ink);background:var(--copper);border-color:var(--copper);transform:scale(1.15)}
+.coin{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 12px;flex:none}
+.coin span{width:22px;height:22px;color:var(--glow)}
+.coin b{font-size:18px;font-variant-numeric:tabular-nums;color:var(--glow)}
+
+.stage{position:relative;width:100%;aspect-ratio:16/10;max-height:calc(100vh - 100px);min-height:380px;border-radius:16px;overflow:hidden;background:#0f1c22;border:1px solid var(--line)}
+@media (max-width:640px){.stage{aspect-ratio:3/4}.game{min-height:100vh;align-content:center}}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+.mentor{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:flex-end;gap:8px;pointer-events:none}
+.mentor .face{width:70px;height:70px;flex:none}
+.mentor.shake .face{animation:no .45s}
+@keyframes no{20%{transform:rotate(-12deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
+.bub{display:flex;align-items:center;gap:12px;background:var(--paper-t);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--paper-ink);border-radius:18px;padding:10px 16px 10px 10px;position:relative;margin-bottom:28px;box-shadow:0 4px 0 #0004;max-width:min(560px,100%);min-width:0}
+.bub::before{content:"";position:absolute;left:-10px;bottom:16px;border:10px solid transparent;border-right-color:var(--paper-t);border-left:0}
+.bub .ico{width:52px;height:52px;flex:none;background:#2b241a;color:var(--paper);border-radius:14px;padding:10px}
+.bub p{margin:0;font-size:17px;line-height:1.45;font-weight:600}
+.bub.pop{animation:pop .35s}
+@keyframes pop{50%{transform:scale(1.06)}}
+.mentor.shake .bub{background:#ffd6cfd9}
+
+.note{position:absolute;right:12px;top:12px;background:var(--paper-t);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--paper-ink);border-radius:14px;padding:8px 14px 8px 8px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 0 #0004;pointer-events:none;max-width:60%}
+.note span{width:38px;height:38px;flex:none}
+.note p{margin:0;font-weight:700;font-size:15px}
+
+.beep{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);width:140px;height:140px;border-radius:50%;padding:32px;pointer-events:none;animation:pop .4s}
+.beep.yes{background:var(--ok);color:#0b2a17;box-shadow:0 0 0 14px #5fe08f44}
+.beep.no{background:#46555b;color:#e8eef0}
+
+.over{position:absolute;inset:0;background:#0b161be6;display:grid;place-items:center;padding:16px;z-index:5;overflow:auto}
+.menu{width:min(920px,100%);display:grid;gap:14px}
+.mhead{display:flex;align-items:center;gap:12px}
+.mhead h2{margin:0;font-size:24px}
+.mhead .ic{width:40px;height:40px;color:var(--copper)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.card{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:16px 12px 14px;display:grid;justify-items:center;gap:8px;text-align:center;transition:transform .15s,border-color .15s}
+.card:hover{transform:translateY(-4px);border-color:var(--copper)}
+.card.locked{opacity:.5;cursor:not-allowed}
+.card.sel{border-color:var(--ok);box-shadow:0 0 0 3px #5fe08f55}
+.card.locked:hover{transform:none;border-color:var(--line)}
+.card .big{width:80px;height:80px;color:#3fb6a8}
+.card.locked .big{color:var(--muted)}
+.card b{font-size:17px}
+.card small{color:var(--muted);font-size:13px}
+.card .num{position:absolute;left:10px;top:10px;width:34px;height:34px;border-radius:50%;background:var(--copper);color:var(--copper-ink);display:grid;place-items:center;font-size:18px;font-weight:800}
+.card .ok{position:absolute;right:10px;top:10px;width:32px;height:32px;border-radius:50%;background:var(--ok);color:#0b2a17;padding:6px}
+.card.stage-card{padding-top:52px;min-height:150px;align-content:start}
+.card.stage-card .sico{width:46px;height:46px;color:var(--copper)}
+.bar{width:80%;height:6px;border-radius:3px;background:#0004;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+
+.win{display:grid;justify-items:center;gap:14px;text-align:center}
+.win .bigok{width:120px;height:120px;border-radius:50%;background:var(--ok);color:#0b2a17;padding:24px;animation:pop .5s}
+.win .cause{background:var(--paper);color:var(--paper-ink);border-radius:14px;padding:10px 16px;font-weight:700;font-size:17px}
+.win .grade{background:var(--glow);color:#3a2c05;border-radius:12px;padding:6px 16px;font-weight:800;font-size:15px}
+.win .pay{display:flex;align-items:center;gap:8px;font-size:32px;font-weight:800;color:var(--glow)}
+.win .pay span{width:38px;height:38px}
+.row{display:flex;gap:12px}
+.bigbtn{width:70px;height:70px;border-radius:20px;background:var(--panel-2);border:2px solid var(--line);padding:16px}
+.bigbtn.go{background:var(--copper);color:var(--copper-ink);border-color:var(--copper)}
+
+.solder{display:grid;justify-items:center;gap:16px;width:min(420px,100%);text-align:center}
+.solder .tool{width:80px;height:80px;color:var(--copper)}
+.solder p{margin:0;font-weight:600}
+.heat{position:relative;width:100%;height:30px;border-radius:15px;background:#0c1a1f;border:2px solid var(--line);overflow:hidden}
+.zone{position:absolute;top:0;bottom:0;background:#5fe08f66;border-left:3px solid var(--ok);border-right:3px solid var(--ok)}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#4f6b75,#e8a04c 70%,#ff5a3c)}
+.hold{width:116px;height:116px;border-radius:50%;background:var(--copper);color:var(--copper-ink);padding:28px;box-shadow:0 8px 0 #8a4f22;user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .08s,box-shadow .08s}
+.hold.active{transform:translateY(6px);box-shadow:0 2px 0 #8a4f22;background:#ffb070}
+.sres{width:52px;height:52px;border-radius:50%;padding:11px}
+.sres.ok{background:var(--ok);color:#0b2a17}
+.sres.bad{background:var(--bad);color:#2a0b06;animation:no .4s}
+
+.diagbox{display:grid;gap:12px;width:min(380px,100%)}
+.opts{display:grid;gap:10px}
+.opt{background:var(--panel-2);border:2px solid var(--line);border-radius:14px;padding:14px 18px;font-size:17px;font-weight:700;text-align:center;transition:transform .1s}
+.opt:active{transform:scale(.97)}
+.opt:disabled{cursor:not-allowed}
+.opt.wrong{opacity:.35;text-decoration:line-through;border-color:var(--bad);animation:no .4s}
+.opt.hint{border-color:var(--ok);box-shadow:0 0 0 3px #5fe08f55}
+.hintbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--glow);font-weight:700}
+.hintbtn span{width:22px;height:22px;flex:none}
+.hintbtn:disabled{opacity:.4;cursor:not-allowed}
+.nogl{display:grid;place-items:center;height:100%;color:var(--muted);padding:20px;text-align:center}
+@media (prefers-reduced-motion:reduce){.bub.pop,.beep,.win .bigok,.mentor.shake .face{animation:none}}
+[hidden]{display:none!important}
+body{margin:0}
+</style>
+</head>
+<body>
+<div class="game">
+  <div class="top">
+    <button class="iconbtn" id="homeBtn" type="button" aria-label="물건 고르기"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button>
+    <div class="strip" id="strip" aria-label="수리 순서"></div>
+    <div class="coin" aria-label="번 돈"><span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 9l2 7 2-5 2 5 2-7M7 12h10"/></svg></span><b id="money">0</b></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="note" id="note"></div>
+    <div class="mentor" id="mentor">
+      <svg class="face" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="35" r="23" fill="#f1c9a0"/>
+        <path d="M9 31c0-14 10-22 23-22s23 8 23 22z" fill="#2f6fb5"/><rect x="7" y="28" width="38" height="6" rx="3" fill="#24558c"/>
+        <circle cx="24" cy="39" r="2.6" fill="#2b241a"/><circle cx="40" cy="39" r="2.6" fill="#2b241a"/>
+        <path d="M24 47q8 6 16 0" stroke="#2b241a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="bub" id="bub" aria-live="polite"><span class="ico" id="bubIco"></span><p id="bubTxt"></p></div>
+    </div>
+    <div class="beep" id="beep" hidden></div>
+
+    <div class="over" id="menu"><div class="menu" id="menuIn"></div></div>
+
+    <div class="over" id="win" hidden>
+      <div class="win">
+        <div class="bigok"><svg class="i" viewBox="0 0 24 24" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></div>
+        <div class="cause" id="winCause"></div>
+        <div class="grade" id="winGrade" hidden></div>
+        <div class="pay"><span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 9l2 7 2-5 2 5 2-7M7 12h10"/></svg></span><b id="winPay"></b></div>
+        <div class="row">
+          <button class="bigbtn" id="winHome" type="button" aria-label="단계 목록"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+          <button class="bigbtn go" id="winNext" type="button" aria-label="다음 단계"><svg class="i" viewBox="0 0 24 24" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="over" id="solder" hidden>
+      <div class="solder">
+        <div class="tool" id="sdTool"></div>
+        <p>꾹 누르다가 초록 칸에서 손을 떼요</p>
+        <div class="heat"><div class="zone" id="sdZone"></div><div class="fill" id="sdFill"></div></div>
+        <div class="sres" id="sdRes" hidden></div>
+        <button class="hold" id="sdHold" type="button" aria-label="꾹 누르기"><svg class="i" viewBox="0 0 24 24"><path d="M8 13V5a1.5 1.5 0 013 0v6M11 11V4a1.5 1.5 0 013 0v7M14 11V5a1.5 1.5 0 013 0v8c0 4-2 7-6 7s-6-2-7-5l-1.5-3a1.4 1.4 0 012.4-1.4L8 13"/></svg></button>
+      </div>
+    </div>
+
+    <div class="over" id="diag" hidden>
+      <div class="diagbox">
+        <div class="opts" id="diagOpts"></div>
+        <button class="hintbtn" id="diagHintBtn" type="button"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const PI=Math.PI;
+
+/* ================= icons ================= */
+const IC={
+  plugOut:'<path d="M4 9h7v7H4z"/><path d="M6 9V5M9 9V5M7.5 16v4"/><path d="M14 12.5h7M18 9.5l3 3-3 3"/>',
+  plugIn:'<path d="M13 9h7v7h-7z"/><path d="M15 9V5M18 9V5M16.5 16v4"/><path d="M3 12.5h7M7 9.5l3 3-3 3"/>',
+  driver:'<path d="M14 3l7 7-3 3-7-7z"/><path d="M11 6l-7 7a2 2 0 000 3l1 1a2 2 0 003 0l7-7"/>',
+  lift:'<path d="M12 20V8M7 12l5-5 5 5"/><path d="M4 4h16"/>',
+  down:'<path d="M12 4v12M7 12l5 5 5-5"/><path d="M4 20h16"/>',
+  hand:'<path d="M8 13V5a1.5 1.5 0 013 0v6M11 11V4a1.5 1.5 0 013 0v7M14 11V5a1.5 1.5 0 013 0v8c0 4-2 7-6 7s-6-2-7-5l-1.5-3a1.4 1.4 0 012.4-1.4L8 13"/>',
+  tester:'<rect x="6" y="2" width="12" height="13" rx="2"/><path d="M9 6h6M9 9h3"/><path d="M9 15l-3 7M15 15l3 7"/>',
+  look:'<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L21 21"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
+  box:'<path d="M3 8l9-4 9 4-9 4z"/><path d="M3 8v8l9 4 9-4V8M12 12v8"/>',
+  iron:'<path d="M2 22l5-5"/><path d="M7 17l3-3 4 4-3 3z"/><path d="M12 12l6-6a2.1 2.1 0 013 3l-6 6"/>',
+  power:'<path d="M12 3v8"/><path d="M6.3 7.3a8 8 0 1011.4 0"/>',
+  pick:'<path d="M6 3l6 13M18 3l-6 13M12 16v5"/>',
+  spin:'<path d="M20 12a8 8 0 11-3-6.2"/><path d="M20 4v5h-5"/>',
+  brush:'<path d="M14 4l6 6-8 8-6-6z"/><path d="M6 12l-3 3 6 6 3-3"/>',
+  scissors:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8L20 18M8.5 16L20 6"/>',
+  strip:'<path d="M3 12h9"/><path d="M12 9h3v6h-3z"/><path d="M15 12h6" stroke-dasharray="2 2"/>',
+  drop:'<path d="M12 3c3 5 6 8 6 12a6 6 0 01-12 0c0-4 3-7 6-12z"/>',
+  clip:'<rect x="5" y="4" width="14" height="16" rx="3"/><path d="M9 4v6h6V4"/>',
+  dryer:'<path d="M2 6h13a4.5 4.5 0 010 9H9.5l1.2 6H6.5L5.5 15H2z"/><path d="M19.5 8v5"/>',
+  fan:'<circle cx="12" cy="9" r="7"/><path d="M12 9l-3-5M12 9l5 2M12 9l-3 5M12 16v5M8 21h8"/>',
+  kettle:'<path d="M6 8h11l1 12H5z"/><path d="M17 10c3 0 3 7 0 7M6 10L3 8M8 8V6h7v2"/>',
+  rice:'<path d="M4 10h16v8a3 3 0 01-3 3H7a3 3 0 01-3-3z"/><path d="M3 10c1-4 5-6 9-6s8 2 9 6"/><path d="M9 14h6"/>',
+  remote:'<rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="6" r="1.2"/><path d="M10.5 11h3M10.5 14h3M10.5 17h3"/>',
+  microwave:'<rect x="2" y="4" width="20" height="16" rx="2"/><rect x="4.5" y="7" width="11" height="10" rx="1"/><circle cx="19" cy="9" r=".6"/><circle cx="19" cy="12" r=".6"/><path d="M17 15.5h4"/>',
+  toaster:'<rect x="3" y="9" width="16" height="11" rx="2"/><path d="M7 9V5M12 9V5"/><rect x="18.5" y="12" width="3" height="5" rx="1"/>',
+  vacuum:'<path d="M12 2v9"/><circle cx="12" cy="2" r="1.2"/><path d="M7 20h10l-1.2-7H8.2z"/><circle cx="9" cy="20.5" r="1.3"/><circle cx="15" cy="20.5" r="1.3"/>',
+  phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="6" r="1.5"/>',
+  back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  check:'<path d="M5 12l5 5 9-10"/>',
+  beep:'<path d="M3 9h4l5-4v14l-5-4H3z"/><path d="M15.5 9a4 4 0 010 6M18.5 6a8 8 0 010 12"/>',
+  mute:'<path d="M3 9h4l5-4v14l-5-4H3z"/><path d="M16 9l5 6M21 9l-5 6"/>',
+  no:'<path d="M6 6l12 12M18 6L6 18"/>',
+  warn:'<path d="M12 3l9 17H3z"/><path d="M12 10v4M12 17v.5"/>',
+  q:'<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 115.2 1.5c-.6.9-1.4 1.3-1.9 2.1-.3.5-.3 1-.3 1.4"/><path d="M12 17.5v.01"/>',
+};
+const svg=(k,sw)=>`<svg class="i" viewBox="0 0 24 24"${sw?` stroke-width="${sw}"`:''}>${IC[k]}</svg>`;
+
+/* ================= save ================= */
+const KEY='jeonpasa-3d-v2';
+const P={money:0,done:[]};
+try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){P.money=d.money||0;P.done=d.done||[];}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}}
+function showMoney(){$('#money').textContent=P.money.toLocaleString('ko-KR');}
+showMoney();
+
+let AC=null;
+function tone(f,d,type,v){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.value=v||.06;g.gain.setTargetAtTime(0,AC.currentTime+d*.7,d*.2);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);}catch(e){}}
+function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
+
+if(!window.THREE||!THREE.OrbitControls){$('#stage').innerHTML='<div class="nogl">3D를 불러오지 못했어요. 새로고침해 주세요.</div>';return;}
+const W=THREE,V=(x,y,z)=>new W.Vector3(x,y,z);
+
+/* ================= three setup ================= */
+const canvas=$('#cv'),stageEl=$('#stage');
+let renderer;
+try{renderer=new W.WebGLRenderer({canvas,antialias:true});}catch(e){$('#stage').innerHTML='<div class="nogl">이 기기에서는 3D를 켤 수 없어요.</div>';return;}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new W.Scene();scene.background=new W.Color('#16262d');
+const camera=new W.PerspectiveCamera(40,1.6,.1,100);
+const controls=new W.OrbitControls(camera,canvas);
+controls.enablePan=false;controls.enableDamping=true;controls.minDistance=1.5;controls.maxDistance=13;
+scene.add(new W.HemisphereLight(0xffffff,0x3a4a55,.85));
+const sun=new W.DirectionalLight(0xffffff,.75);sun.position.set(3,7,5);scene.add(sun);
+const back=new W.DirectionalLight(0xbfd8ff,.35);back.position.set(-4,4,-6);scene.add(back);
+
+function mat(c,o){return new W.MeshStandardMaterial(Object.assign({color:c,roughness:.55,metalness:.05},o||{}));}
+function M_(g,m,parent,p,r){const x=new W.Mesh(g,m);if(p)x.position.set(p[0],p[1],p[2]);if(r)x.rotation.set(r[0],r[1],r[2]);if(parent)parent.add(x);return x;}
+const cyl=(rt,rb,h,s,open,ts,tl)=>new W.CylinderGeometry(rt,rb,h,s||28,1,!!open,ts||0,tl||PI*2);
+
+let pick=[],anchors={},D=null;
+function tag(o,id){o.traverse(m=>{if(m.isMesh){m.userData.id=id;pick.push(m);}});}
+function anchor(parent,id,p){const a=new W.Object3D();a.position.set(p[0],p[1],p[2]);parent.add(a);anchors[id]=a;}
+function live(m){let o=m;while(o){if(!o.visible)return false;if(o===scene)return true;o=o.parent;}return false;}
+
+/* environment */
+M_(new W.BoxGeometry(14,.2,7),mat('#7a5638',{roughness:.8}),scene,[0,-1.2,.6]);
+M_(new W.BoxGeometry(14,.02,7),mat('#2a4a44',{roughness:.9}),scene,[0,-1.09,.6]);
+M_(new W.PlaneGeometry(14,8),mat('#24363d',{roughness:1}),scene,[0,2.5,-2.5]);
+const outlet=new W.Group();outlet.position.set(2.8,-.3,-2.47);scene.add(outlet);
+M_(new W.BoxGeometry(.6,.8,.05),mat('#eceff1'),outlet);
+[-.09,.09].forEach(x=>M_(cyl(.03,.03,.06,10),mat('#222'),outlet,[x,0,.02],[PI/2,0,0]));
+const boxG=new W.Group();boxG.position.set(2.9,-1.08,1.5);scene.add(boxG);
+M_(new W.BoxGeometry(1.1,.04,.8),mat('#c78a4a',{roughness:.9}),boxG,[0,.02,0]);
+M_(new W.BoxGeometry(1.1,.36,.04),mat('#c78a4a'),boxG,[0,.2,.4]);
+M_(new W.BoxGeometry(1.1,.36,.04),mat('#b97d40'),boxG,[0,.2,-.4]);
+M_(new W.BoxGeometry(.04,.36,.8),mat('#b97d40'),boxG,[.55,.2,0]);
+M_(new W.BoxGeometry(.04,.36,.8),mat('#c78a4a'),boxG,[-.55,.2,0]);
+const boxContent=new W.Group();boxContent.position.set(0,.22,0);boxG.add(boxContent);
+const tester=new W.Group();tester.position.set(-2.5,-.75,1.7);tester.rotation.set(-.5,.3,0);scene.add(tester);
+M_(new W.BoxGeometry(.5,.75,.16),mat('#f0c12e'),tester);
+M_(new W.BoxGeometry(.38,.22,.02),mat('#9fb08a'),tester,[0,.18,.09]);
+tester.visible=false;
+const probeR=M_(new W.ConeGeometry(.05,.24,12),mat('#e0352b'),scene);probeR.visible=false;
+const probeB=M_(new W.ConeGeometry(.05,.24,12),mat('#222'),scene);probeB.visible=false;
+const plug=new W.Group();scene.add(plug);
+M_(new W.BoxGeometry(.3,.24,.22),mat('#f2f2f0'),plug);
+[-.07,.07].forEach(x=>M_(cyl(.022,.022,.18,8),mat('#c9cdd1',{metalness:.6}),plug,[x,0,-.18],[PI/2,0,0]));
+const PLUG_IN={p:V(2.8,-.3,-2.22),q:new W.Quaternion()},PLUG_OUT={p:V(2.0,-.97,-.9),q:new W.Quaternion().setFromEuler(new W.Euler(0,.7,0))};
+const cordMat=mat('#2a2d31');let cordMesh=null;
+function updateCord(){
+  if(!D)return;
+  if(!D.cordStart){plug.visible=false;if(cordMesh)cordMesh.visible=false;return;}
+  plug.visible=true;
+  const s=D.cordStart,end=plug.localToWorld(V(0,0,.12));
+  const curve=new W.CatmullRomCurve3([s,V(s.x+.3,-1.04,s.z-.5),V(1.4,-1.04,-1.2),end]);
+  if(cordMesh){scene.remove(cordMesh);cordMesh.geometry.dispose();}
+  cordMesh=new W.Mesh(new W.TubeGeometry(curve,40,.04,6),cordMat);scene.add(cordMesh);
+}
+const arrow=new W.Mesh(new W.ConeGeometry(.13,.32,16),new W.MeshBasicMaterial({color:0xffd84a,depthTest:false,transparent:true}));
+arrow.rotation.x=PI;arrow.renderOrder=999;scene.add(arrow);
+const parts=[];
+for(let i=0;i<50;i++){const m=new W.Mesh(new W.SphereGeometry(.05,8,6),new W.MeshBasicMaterial({color:0xff8a4c,transparent:true,opacity:0}));m.visible=false;scene.add(m);parts.push({m,life:0,v:V(0,0,0)});}
+pick=[];tag(plug,'plug');anchor(plug,'plug',[0,.1,0]);
+[...boxG.children].forEach(c=>{if(c!==boxContent)tag(c,'box');});anchor(boxG,'box',[0,.45,0]);
+const ENV_PICK=pick.slice(),ENV_ANCH={plug:anchors.plug,box:anchors.box};
+
+/* ================= shared builders ================= */
+function screwAt(parent,id,p,d){
+  const dir=V(d[0],d[1],d[2]).normalize(),q=new W.Quaternion().setFromUnitVectors(V(0,1,0),dir);
+  const hole=M_(cyl(.075,.075,.02,14),mat('#0e1a1a'),parent,p);hole.quaternion.copy(q);tag(hole,id);
+  const s=new W.Group(),inner=new W.Group();s.add(inner);
+  M_(cyl(.1,.1,.06,20),mat('#d5d9dc',{metalness:.6,roughness:.3}),inner);
+  M_(new W.BoxGeometry(.15,.02,.03),mat('#5d656b'),inner,[0,.032,0]);
+  M_(new W.BoxGeometry(.03,.02,.15),mat('#5d656b'),inner,[0,.032,0]);
+  s.position.set(p[0],p[1],p[2]).addScaledVector(dir,.03);s.quaternion.copy(q);parent.add(s);tag(s,id);
+  s.userData.inner=inner;s.userData.dir=dir;s.userData.home=s.position.clone();
+  anchor(parent,id,[p[0]+dir.x*.1,p[1]+dir.y*.1,p[2]+dir.z*.1]);
+  D.screws[id]=s;
+}
+function capsule(bad,idA,idB,id,len){
+  const g=new W.Group(),L=len||.24;
+  M_(new W.TubeGeometry(new W.LineCurve3(V(-L/2-.08,0,0),V(L/2+.08,0,0)),2,.012,6),mat('#c9cdd1',{metalness:.6}),g);
+  M_(cyl(.055,.055,L,18),mat(bad?'#5a5550':'#d9dde0',{metalness:.6,roughness:.3}),g,[0,0,0],[0,0,PI/2]);
+  if(bad)M_(new W.SphereGeometry(.06,12,8),mat('#1f150c'),g,[.02,.02,.01]).scale.set(1.2,.7,.9);
+  tag(g,id);anchor(g,id,[0,.12,0]);
+  const a=M_(new W.SphereGeometry(.04,10,8),mat('#e3e7ea',{metalness:.6}),g,[-L/2-.08,0,0]);
+  const b=M_(new W.SphereGeometry(.04,10,8),mat('#e3e7ea',{metalness:.6}),g,[L/2+.08,0,0]);
+  tag(a,idA);tag(b,idB);anchor(g,idA,[-L/2-.08,0,.02]);anchor(g,idB,[L/2+.08,0,.02]);
+  return g;
+}
+function wireFix(parent,a,b,color,state){
+  const g=new W.Group();parent.add(g);
+  const A=V(a[0],a[1],a[2]),B=V(b[0],b[1],b[2]),m1=A.clone().lerp(B,.38),m2=A.clone().lerp(B,.62);
+  const tube=(p,q,r,c)=>M_(new W.TubeGeometry(new W.LineCurve3(p,q),4,r,8),mat(c),g);
+  const full=tube(A,B,.032,color),L=tube(A,m1,.032,color),R=tube(m2,B,.032,color),burnt=tube(m1,m2,.05,'#1b1410'),fresh=tube(m1,m2,.032,'#f0c050');
+  const tips=[m1,m2].map(p=>M_(new W.SphereGeometry(.028,8,6),mat('#d48a3a',{metalness:.6}),g,[p.x,p.y,p.z]));
+  const blobs=[m1,m2].map(p=>M_(new W.SphereGeometry(.055,10,8),mat('#e8ecef',{metalness:.7,roughness:.25}),g,[p.x,p.y,p.z]));
+  tag(g,'wfix');const mid=A.clone().lerp(B,.5);anchor(g,'wfix',[mid.x,mid.y+.06,mid.z]);
+  const set=s=>{full.visible=s==='ok';L.visible=R.visible=s!=='ok';burnt.visible=s==='burnt';tips.forEach(t=>t.visible=s==='stripped');fresh.visible=s==='fixed';blobs.forEach(t=>t.visible=s==='fixed');};
+  set(state);return{set};
+}
+function tube(parent,pts,color,r){return M_(new W.TubeGeometry(new W.CatmullRomCurve3(pts.map(p=>V(p[0],p[1],p[2]))),30,r||.03,6),mat(color),parent);}
+function dirt(parent,id,geo,color,p,r,op){const m=M_(geo,mat(color,{transparent:true,opacity:op||.92,roughness:1}),parent,p,r);tag(m,id);anchor(parent,id,[p[0],p[1]+.12,p[2]]);D.dirt[id]=m;m.userData.op0=op||.92;return m;}
+function bottle(color){const g=new W.Group();M_(cyl(.12,.12,.36,16),mat(color,{transparent:true,opacity:.85}),g,[0,.18,0]);M_(cyl(.04,.06,.14,12),mat(color),g,[0,.42,0]);M_(cyl(.045,.045,.05,12),mat('#e9554a'),g,[0,.51,0]);return g;}
+function newD(cordStart){D={root:new W.Group(),screws:{},slots:{},obj:{},mov:{},dirt:{},clips:{},cams:{},cordStart};scene.add(D.root);return D;}
+function slot(key,parent,p,r,make,state){D.slots[key]={parent,p,r,make};const o=make(state);o.position.set(p[0],p[1],p[2]);o.rotation.set(r[0],r[1],r[2]);parent.add(o);D.obj[key]=o;}
+
+/* ================= DRYER ================= */
+function makeHeater(broken,fresh){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(1.94,.5,.03),mat('#d9c89c',{roughness:.85}),g);
+  M_(new W.BoxGeometry(1.94,.03,.5),mat('#d2c092',{roughness:.85}),g);
+  const col=fresh?'#f4f8fb':'#9aa1a6';
+  const coil=(x0,x1)=>{const pts=[];for(let x=x0;x<=x1+1e-6;x+=.015){const a=x*40;pts.push(V(x,.22*Math.cos(a),.22*Math.sin(a)));}
+    return M_(new W.TubeGeometry(new W.CatmullRomCurve3(pts),pts.length*2,.02,6),mat(col,{metalness:.7,roughness:.3}),g);};
+  if(broken){coil(-.95,-.12);coil(.12,.95);M_(new W.BoxGeometry(.42,.48,.034),mat('#2a1a0c',{roughness:1}),g,[0,0,.002]);}
+  else coil(-.95,.95);
+  tag(g,'heater');anchor(g,'heater',[0,.35,0]);
+  const a=M_(new W.SphereGeometry(.065,14,10),mat('#e8ecef',{metalness:.6,roughness:.3}),g,[-.97,0,.14]);
+  const b=M_(new W.SphereGeometry(.065,14,10),mat('#e8ecef',{metalness:.6,roughness:.3}),g,[.97,0,.14]);
+  tag(a,'hA');tag(b,'hB');anchor(g,'hA',[-.97,0,.14]);anchor(g,'hB',[.97,0,.14]);
+  return g;
+}
+function makeMotor(bad){
+  const g=new W.Group();
+  M_(cyl(.24,.24,.34,28),mat('#b8bfc4',{metalness:.5,roughness:.35}),g,[0,0,0],[0,0,PI/2]);
+  M_(cyl(.248,.248,.13,28),mat(bad?'#2a1c12':'#c47a3a',{metalness:.4}),g,[0,0,0],[0,0,PI/2]);
+  if(bad)M_(new W.SphereGeometry(.12,12,8),mat('#140c06'),g,[0,.12,.17]).scale.set(1.3,.6,.5);
+  tag(g,'motor');anchor(g,'motor',[0,.32,0]);
+  const a=M_(new W.SphereGeometry(.045,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.1,0,.25]);
+  const b=M_(new W.SphereGeometry(.045,10,8),mat('#e3e7ea',{metalness:.6}),g,[.1,0,.25]);
+  tag(a,'mA');tag(b,'mB');anchor(g,'mA',[-.1,0,.27]);anchor(g,'mB',[.1,0,.27]);
+  return g;
+}
+const BLUE_OK=[[.3,.48,.1],[.55,.9,.12],[1.15,1.3,.15],[1.32,1.5,.14]],BLUE_OFF=[[.56,.34,.24],[.66,.9,.14],[1.15,1.3,.15],[1.32,1.5,.14]];
+function buildDryer(cfg){
+  const d=newD(V(.2,-.98,-.35)),R=d.root;
+  const BODY='#3fb6a8',BACK='#1d564f';
+  M_(cyl(.9,.9,3.2,44,true,PI/2,PI),mat(BACK,{side:W.DoubleSide}),R,[0,1.5,0],[0,0,PI/2]);
+  M_(cyl(.36,.4,2,28,true,PI/2,PI),mat(BACK,{side:W.DoubleSide}),R,[.2,-.05,0]);
+  M_(new W.CircleGeometry(.4,28),mat(BACK,{side:W.DoubleSide}),R,[.2,-1.05,0],[PI/2,0,0]);
+  M_(cyl(.62,.9,.7,44,true),mat('#2d3338',{side:W.DoubleSide}),R,[1.95,1.5,0],[0,0,-PI/2]);
+  /* grille */
+  const gr=new W.Group();gr.position.set(-1.62,1.5,0);R.add(gr);
+  [.87,.62,.36].forEach(r=>M_(new W.TorusGeometry(r,.035,8,48),mat('#9aa5ab',{metalness:.4}),gr,[0,0,0],[0,PI/2,0]));
+  for(let i=0;i<4;i++)M_(new W.BoxGeometry(.035,1.74,.035),mat('#9aa5ab',{metalness:.4}),gr,[0,0,0],[i*PI/4,0,0]);
+  tag(gr,'grille');anchor(gr,'grille',[0,1.0,0]);
+  screwAt(gr,'g1',[-.04,.74,0],[-1,0,0]);screwAt(gr,'g2',[-.04,-.74,0],[-1,0,0]);
+  d.mov.grille={get:()=>gr,p:[-2.8,-1.06,1.8],e:[0,0,PI/2]};
+  /* fan */
+  const fan=new W.Group();fan.position.set(-1.18,1.5,0);R.add(fan);d.fan=fan;
+  M_(cyl(.16,.16,.26,20),mat('#3a4248'),fan,[0,0,0],[0,0,PI/2]);
+  for(let i=0;i<5;i++){const b=new W.Group();b.rotation.x=i*PI*2/5;fan.add(b);M_(new W.BoxGeometry(.05,.58,.24),mat('#7f8c96'),b,[0,.42,0],[0,.45,0]);}
+  tag(fan,'fan');anchor(fan,'fan',[0,.6,0]);
+  d.mov.fanOut={get:()=>fan,p:[-2.6,-.46,1.9],e:[0,0,0]};
+  d.hair=[];
+  if(cfg.hair)['h1','h2','h3'].forEach((id,i)=>{const h=M_(new W.TorusGeometry(.24+i*.05,.05,6,24,PI*1.1),mat('#3a2416',{roughness:1}),R,[-1.38-i*.03,1.5,0],[i*2.1,PI/2,0]);tag(h,id);d.hair.push(h);anchor(R,id,[-1.42,1.5+Math.cos(i*2.1+.6)*.3,Math.sin(i*2.1+.6)*.3]);});
+  slot('motor',R,[-.8,1.5,0],[0,0,0],s=>makeMotor(s==='bad'),cfg.motor||'ok');
+  slot('heater',R,[.35,1.5,0],[0,0,0],s=>makeHeater(s==='broken',s==='new'),cfg.heater||'ok');
+  slot('fuse',R,[1.0,1.86,.1],[0,0,0],s=>capsule(s==='bad','tA','tB','fuse'),cfg.fuse||'ok');
+  tube(R,[[1.32,1.5,.14],[1.25,1.75,.12],[1.16,1.86,.1]],'#d8dde0',.015);
+  /* switch + wires */
+  M_(new W.BoxGeometry(.3,.34,.22),mat('#34383c'),R,[.2,.29,.02]);
+  M_(new W.SphereGeometry(.045,12,8),mat('#e3e7ea',{metalness:.6}),R,[.1,.48,.1]);
+  const sOut=M_(new W.SphereGeometry(.055,12,8),mat(cfg.wire==='off'?'#7d817c':'#e3e7ea',{metalness:cfg.wire==='off'?.1:.6,roughness:cfg.wire==='off'?.9:.3}),R,[.3,.48,.1]);
+  tag(sOut,'sOut');anchor(R,'sOut',[.3,.5,.1]);d.sOut=sOut;
+  const sIn=M_(new W.SphereGeometry(.05,12,8),mat('#e3e7ea',{metalness:.6}),R,[.2,.1,.14]);tag(sIn,'sIn');anchor(R,'sIn',[.2,.1,.14]);
+  tube(R,[[.1,.48,.1],[0,.9,.12],[-.45,1.3,.15],[-.62,1.5,.14]],'#d64a3a');
+  d.blue=tube(R,cfg.wire==='off'?BLUE_OFF:BLUE_OK,'#3b6fd0');
+  if(cfg.wire==='off')d.tip=M_(new W.SphereGeometry(.04,10,8),mat('#d48a3a',{metalness:.6}),R,[.56,.34,.24]);
+  tube(R,[[-.62,1.5,.14],[-.75,1.62,.22],[-.9,1.5,.25]],'#d8dde0',.015);
+  if(cfg.cord){d.wf=wireFix(R,[.2,-.95,.12],[.2,.04,.14],'#8a6a4a','burnt');
+    const cA=M_(new W.SphereGeometry(.045,10,8),mat('#e3e7ea',{metalness:.6}),R,[.2,-.95,.12]);tag(cA,'cA');anchor(R,'cA',[.2,-.93,.14]);}
+  else tube(R,[[.2,-1,.05],[.2,-.5,.1],[.2,.1,.14]],'#8a6a4a');
+  /* cover */
+  const Pv=V(.1,.6,0),cv=new W.Group();cv.position.copy(Pv);R.add(cv);d.cover=cv;
+  M_(cyl(.9,.9,3.2,44,true,-PI/2,PI),mat(BODY,{side:W.DoubleSide}),cv,[-Pv.x,1.5-Pv.y,0],[0,0,PI/2]);
+  M_(cyl(.36,.4,2,28,true,-PI/2,PI),mat(BODY,{side:W.DoubleSide}),cv,[.2-Pv.x,-.05-Pv.y,0]);
+  tag(cv,'cover');anchor(cv,'cover',[-.1,1.95,.5]);
+  const sw=new W.Group();sw.position.set(.2-Pv.x,.3-Pv.y,.37);cv.add(sw);
+  M_(new W.BoxGeometry(.17,.42,.06),mat('#1d4d47'),sw);
+  d.knob=M_(new W.BoxGeometry(.13,.15,.08),mat('#f4f4f4'),sw,[0,.12,.02]);
+  tag(sw,'switch');anchor(cv,'switch',[.2-Pv.x,.45-Pv.y,.4]);
+  screwAt(cv,'s1',[-1.1,.9,.9],[0,0,1]);screwAt(cv,'s2',[1.1,.9,.9],[0,0,1]);screwAt(cv,'s3',[.1,-1.15,.39],[0,0,1]);
+  d.mov.cover={get:()=>cv,p:[.3,-1.1,2.75],e:[-PI/2,0,0]};
+  d.cams={home:[[.6,2.7,8.4],[.3,.5,0]],inside:[[.45,1.9,4.7],[.35,1.05,0]],coil:[[.4,1.85,1.75],[.35,1.5,0]],sw:[[.75,.95,1.6],[.3,.45,.1]],
+    back:[[-6.4,2.6,3.4],[-1,.7,.2]],fanZ:[[-3.4,1.9,.9],[-1.2,1.5,0]],cordZ:[[.75,-.2,1.5],[.2,-.45,.12]],fuseZ:[[1.15,2.15,1.5],[1.0,1.84,.1]],motorZ:[[-.5,2.0,1.8],[-.85,1.5,0]]};
+  d.turnOn=done=>tweenLocal(d.knob,V(0,-.12,.02),.25,done);
+  d.spin=dt=>{fan.rotation.x+=dt*28;};
+  d.emit={p:V(2.32,1.5,0),dir:V(1,0,0),spread:.8,speed:3.4,colors:[0xff8a4c,0xffc070]};
+  return d;
+}
+
+/* ================= FAN ================= */
+function makeCap(bad){
+  const g=new W.Group();
+  M_(cyl(.085,.085,.26,18),mat(bad?'#2b2b2b':'#30343a'),g);
+  if(bad){M_(new W.SphereGeometry(.085,14,8,0,PI*2,0,PI/2),mat('#5a5a5a'),g,[0,.13,0]).scale.set(1,.7,1);M_(new W.SphereGeometry(.03,8,6),mat('#8a5a20'),g,[.07,.05,.04]);}
+  else M_(cyl(.085,.085,.01,18),mat('#777'),g,[0,.135,0]);
+  tag(g,'cap');anchor(g,'cap',[0,.3,0]);return g;
+}
+function makeBlade(cracked){
+  const g=new W.Group();
+  M_(cyl(.14,.14,.12,20),mat('#d8dde0'),g,[0,0,0],[PI/2,0,0]);
+  M_(new W.SphereGeometry(.1,14,10),mat('#c2c9ce'),g,[0,0,.08]);
+  for(let i=0;i<3;i++){const p=new W.Group();p.rotation.z=i*PI*2/3;g.add(p);
+    const b=M_(new W.SphereGeometry(1,20,12),mat('#8fc7e8',{transparent:true,opacity:.85}),p,[0,.55,0],[0,.35,0]);b.scale.set(.3,.42,.03);
+    if(cracked&&i===0){b.scale.set(.3,.3,.03);b.position.y=.42;M_(new W.BoxGeometry(.02,.32,.06),mat('#24343c'),p,[.05,.5,.02],[0,0,.3]);}}
+  tag(g,'blade');anchor(g,'blade',[0,.95,.1]);return g;
+}
+function buildFan(cfg){
+  const d=newD(V(0,-.98,-.95)),R=d.root;const WH='#eeeeea';
+  M_(cyl(1,1.05,.2,40),mat(WH),R,[0,-1.0,0]);
+  M_(cyl(.93,.93,.02,40),mat('#2f353b'),R,[0,-.89,0]);
+  [-.3,0,.3].forEach((x,i)=>{
+    const a=M_(new W.BoxGeometry(.08,.03,.14),mat('#d6b25a',{metalness:.5}),R,[x-.06,-.875,.5]);
+    const b=M_(new W.BoxGeometry(.08,.03,.14),mat('#d6b25a',{metalness:.5}),R,[x+.06,-.875,.5]);
+    if(i===1){tag(a,'c1');tag(b,'c2');anchor(R,'c1',[x-.06,-.86,.5]);anchor(R,'c2',[x+.06,-.86,.5]);}
+  });
+  if(cfg.dirt)dirt(R,'dirt',cyl(.15,.15,.02,18),'#111',[0,-.855,.5],[0,0,0]);
+  if(cfg.cord){d.wf=wireFix(R,[0,-.86,-.9],[0,-.86,-.22],'#2a2d31','burnt');
+    const e1=M_(new W.SphereGeometry(.045,10,8),mat('#e3e7ea',{metalness:.6}),R,[0,-.86,-.88]);tag(e1,'e1');anchor(R,'e1',[0,-.84,-.88]);
+    const e2=M_(new W.SphereGeometry(.045,10,8),mat('#e3e7ea',{metalness:.6}),R,[0,-.86,-.24]);tag(e2,'e2');anchor(R,'e2',[0,-.84,-.24]);}
+  else tube(R,[[0,-.86,-.9],[0,-.86,-.22]],'#2a2d31');
+  tube(R,[[0,-.86,-.22],[0,-.86,.0],[-.06,-.87,.44]],'#d64a3a',.02);
+  /* base cover */
+  const bc=new W.Group();bc.position.set(0,-.86,0);R.add(bc);
+  M_(cyl(.95,.95,.05,40),mat('#f6f6f2'),bc);
+  tag(bc,'bcover');anchor(bc,'bcover',[0,.25,.3]);
+  [-.3,.3].forEach(x=>M_(new W.BoxGeometry(.16,.07,.1),mat('#9aa5ab'),bc,[x,.05,.55]));
+  d.btn=M_(new W.BoxGeometry(.16,.07,.1),mat('#4bb0e6'),bc,[0,.05,.58]);tag(d.btn,'btn');anchor(bc,'btn',[0,.1,.58]);
+  screwAt(bc,'b1',[-.6,.03,-.35],[0,1,0]);screwAt(bc,'b2',[.6,.03,-.35],[0,1,0]);
+  d.mov.bcover={get:()=>bc,p:[1.5,-1.07,1.0],e:[0,0,0]};
+  /* pole + head */
+  M_(cyl(.07,.07,1.9,14),mat('#d0d6da',{metalness:.3}),R,[0,.05,-.3]);
+  M_(cyl(.5,.5,.6,40,true),mat(WH,{side:W.DoubleSide}),R,[0,1.5,-.45],[PI/2,0,0]);
+  M_(cyl(.5,.5,.03,40),mat(WH),R,[0,1.5,-.15],[PI/2,0,0]);
+  M_(new W.TorusGeometry(.3,.08,10,30),mat('#c47a3a',{metalness:.4}),R,[0,1.5,-.5]);
+  M_(cyl(.04,.04,.95,10),mat('#c9cdd1',{metalness:.7}),R,[0,1.5,-.3],[PI/2,0,0]);
+  slot('cap',R,[.3,1.78,-.58],[-PI/2,0,0],s=>makeCap(s==='bad'),cfg.cap||'ok');
+  slot('mfuse',R,[-.22,1.2,-.62],[0,0,0],s=>capsule(s==='bad','f1','f2','mfuse',.18),cfg.mfuse||'ok');
+  if(cfg.gunk)dirt(R,'gunk',new W.TorusGeometry(.06,.035,8,18),'#4a3418',[0,1.5,-.04],[0,0,0],.95);
+  slot('blade',R,[0,1.5,.12],[0,0,0],s=>makeBlade(s==='bad'),cfg.blade||'ok');
+  for(let i=0;i<4;i++)M_(new W.BoxGeometry(.03,.6,.03),mat(WH),R,[Math.cos(i*PI/2)*.78,1.5+Math.sin(i*PI/2)*.78,-.1],[0,0,i*PI/2+PI/2]);
+  M_(new W.TorusGeometry(1.06,.03,8,60),mat(WH),R,[0,1.5,0]);
+  /* motor cap */
+  const mc=new W.Group();mc.position.set(0,1.5,-.78);R.add(mc);
+  M_(cyl(.5,.5,.06,40),mat('#f6f6f2'),mc,[0,0,0],[PI/2,0,0]);
+  for(let i=-2;i<=2;i++)M_(new W.BoxGeometry(.5,.03,.01),mat('#9aa5ab'),mc,[0,i*.07,-.035]);
+  tag(mc,'mcap');anchor(mc,'mcap',[0,.62,-.05]);
+  screwAt(mc,'m1',[0,.38,-.035],[0,0,-1]);screwAt(mc,'m2',[-.33,-.2,-.035],[0,0,-1]);screwAt(mc,'m3',[.33,-.2,-.035],[0,0,-1]);
+  d.mov.mcap={get:()=>mc,p:[-1.4,-1.05,-1.5],e:[PI/2,0,0]};
+  /* front grille */
+  const fg=new W.Group();fg.position.set(0,1.5,.42);R.add(fg);
+  [1.08,.75,.42].forEach(r=>M_(new W.TorusGeometry(r,.025,8,60),mat(WH),fg));
+  for(let i=0;i<8;i++)M_(new W.BoxGeometry(.025,2.16,.025),mat(WH),fg,[0,0,0],[0,0,i*PI/8]);
+  M_(cyl(.14,.14,.04,20),mat('#2f6fb5'),fg,[0,0,.02],[PI/2,0,0]);
+  tag(fg,'fgrille');anchor(fg,'fgrille',[0,1.15,0]);
+  [['k1',-1.1],['k2',1.1]].forEach(([id,x])=>{const c=M_(new W.BoxGeometry(.1,.22,.14),mat('#cfd6da'),fg,[x,0,-.08]);tag(c,id);anchor(fg,id,[x,.15,-.08]);d.clips[id]=c;});
+  d.mov.fgrille={get:()=>fg,p:[-2.0,-1.07,1.4],e:[PI/2,0,0]};
+  d.mov.blade={get:()=>d.obj.blade,p:[1.4,-1.0,1.6],e:[PI/2,0,0]};
+  d.cams={home:[[2.4,2.4,7.4],[0,.6,0]],fback:[[-2.6,2.6,-4.8],[0,1.2,-.6]],capZ:[[.9,2.25,-2.0],[.3,1.75,-.6]],mfuseZ:[[-.6,1.6,-2.0],[-.22,1.2,-.62]],
+    base:[[.3,2.2,3.6],[0,-.8,0]],cordZ:[[.7,.6,1.2],[0,-.87,-.55]],front:[[.3,2.6,6.2],[-.3,.9,.2]],shaftZ:[[.5,1.8,1.3],[0,1.5,0]],bladeZ:[[.5,2.3,2.6],[0,1.6,.12]]};
+  d.turnOn=done=>{const b=d.btn,y=b.position.y;tween(.15,e=>{b.position.y=y-.03*e;},()=>tween(.15,e=>{b.position.y=y-.03*(1-e);},done));};
+  d.spin=dt=>{d.obj.blade.rotation.z+=dt*24;};
+  d.emit={p:V(0,1.5,.55),dir:V(0,0,1),spread:1.6,speed:3,colors:[0xbfe6ff,0xe8f6ff]};
+  return d;
+}
+
+/* ================= KETTLE ================= */
+function makeDisc(bad){
+  const g=new W.Group();
+  M_(cyl(.13,.13,.05,24),mat(bad?'#9ea5ab':'#e2e7eb',{metalness:.6,roughness:.3}),g);
+  if(bad)M_(cyl(.08,.08,.01,16),mat('#2a1f14'),g,[.02,-.03,0]);
+  tag(g,'disc');anchor(g,'disc',[0,-.15,0]);
+  const a=M_(new W.SphereGeometry(.035,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.17,0,0]);
+  const b=M_(new W.SphereGeometry(.035,10,8),mat('#e3e7ea',{metalness:.6}),g,[.17,0,0]);
+  tag(a,'dA');tag(b,'dB');anchor(g,'dA',[-.17,-.04,0]);anchor(g,'dB',[.17,-.04,0]);
+  return g;
+}
+function makeSwitchMod(bad){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(.26,.08,.2),mat('#2b2e33'),g);
+  const lever=M_(new W.BoxGeometry(.06,.05,.24),mat(bad?'#8b5a2b':'#e0a030'),g,[.1,-.05,bad?.16:0],[bad?.6:0,bad?.5:0,0]);
+  if(bad)M_(new W.BoxGeometry(.02,.06,.1),mat('#111'),g,[.1,-.06,-.02]);
+  tag(g,'swmod');anchor(g,'swmod',[0,-.15,0]);
+  const a=M_(new W.SphereGeometry(.03,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.15,-.03,0]);
+  const b=M_(new W.SphereGeometry(.03,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.15,-.03,.08]);
+  tag(a,'wA');tag(b,'wB');anchor(g,'wA',[-.15,-.06,0]);anchor(g,'wB',[-.15,-.06,.08]);
+  return g;
+}
+function buildKettle(cfg){
+  const d=newD(V(0,-1.0,-.9)),R=d.root;
+  M_(cyl(.95,.95,.16,40),mat('#2f353b'),R,[0,-1.02,0]);
+  M_(cyl(.88,.88,.01,40),mat('#454c53'),R,[0,-.94,0]);
+  const pin=M_(cyl(.12,.12,.08,20),mat('#d5d9dc',{metalness:.6,roughness:.3}),R,[0,-.9,0]);tag(pin,'pin');anchor(R,'pin',[0,-.78,0]);
+  if(cfg.rust)dirt(R,'rust',new W.TorusGeometry(.12,.05,8,20),'#6b5a2a',[0,-.87,0],[PI/2,0,0],.95);
+  const K=new W.Group();K.position.set(0,.1,0);R.add(K);d.K=K;d.Khome=K.position.clone();
+  M_(cyl(.72,.9,1.9,40,true),mat('#dfe5e9',{metalness:.35,roughness:.35,side:W.DoubleSide}),K);
+  M_(new W.TorusGeometry(.5,.08,10,24,PI),mat('#2f353b'),K,[.95,.05,0],[0,0,-PI/2]);
+  M_(new W.ConeGeometry(.2,.5,16,1,true),mat('#dfe5e9',{metalness:.35,side:W.DoubleSide}),K,[-.88,.55,0],[0,0,2.3]);
+  M_(new W.BoxGeometry(.05,1.0,.2),mat('#8fd0ea',{transparent:true,opacity:.8}),K,[0,.05,.83],[-.09,0,0]);
+  tag(K,'kettle');anchor(K,'kettle',[0,1.15,0]);
+  M_(cyl(.86,.86,.03,40),mat('#cfd5d9'),K,[0,-.75,0]);
+  if(cfg.scale)dirt(K,'scale',cyl(.8,.8,.025,40),'#f2efe6',[0,-.72,0],[0,0,0],.96);
+  /* lid */
+  const lp=new W.Group();lp.position.set(.65,.97,0);K.add(lp);d.lid=lp;
+  M_(cyl(.73,.73,.06,40),mat('#cdd3d7',{metalness:.3}),lp,[-.65,0,0]);
+  M_(new W.BoxGeometry(.3,.1,.12),mat('#2f353b'),lp,[-.65,.07,0]);
+  tag(lp,'lid');anchor(lp,'lid',[-.65,.2,0]);
+  /* switch */
+  const sw=new W.Group();sw.position.set(1.15,-.48,0);K.add(sw);d.sw=sw;
+  M_(new W.BoxGeometry(.16,.1,.2),mat('#555b61'),sw);
+  d.led=M_(new W.SphereGeometry(.035,10,8),mat('#552018'),sw,[.06,.06,0]);
+  tag(sw,'switch');anchor(K,'switch',[1.15,-.35,0]);
+  /* underside */
+  M_(new W.TorusGeometry(.5,.06,10,40),mat('#b8743a',{metalness:.4}),K,[0,-.8,0],[PI/2,0,0]);
+  M_(new W.BoxGeometry(.24,.06,.16),mat('#1d1f22'),K,[0,-.82,0]);
+  slot('disc',K,[.25,-.83,.32],[0,0,0],s=>makeDisc(s==='bad'),cfg.disc||'ok');
+  slot('swmod',K,[.6,-.83,-.1],[0,0,0],s=>makeSwitchMod(s==='bad'),cfg.swmod||'ok');
+  tube(K,[[.1,-.84,.05],[.06,-.84,.3]],'#e0a030',.025);tube(K,[[.44,-.84,.32],[.42,-.82,.25],[.38,-.82,.2]],'#e0a030',.025);
+  tube(K,[[.1,-.84,-.05],[.45,-.84,-.1]],'#e0a030',.025);
+  if(cfg.wire)d.wf=wireFix(K,[-.12,-.85,0],[-.48,-.85,0],'#e0a030','burnt');else tube(K,[[-.12,-.85,0],[-.48,-.85,0]],'#e0a030');
+  /* plate */
+  const pl=new W.Group();pl.position.set(0,-.95,0);K.add(pl);
+  M_(cyl(.9,.9,.04,40),mat('#cfd4d8',{metalness:.3}),pl);
+  M_(new W.TorusGeometry(.6,.015,6,40),mat('#a9b1b6'),pl,[0,-.022,0],[PI/2,0,0]);
+  tag(pl,'plate');anchor(pl,'plate',[.5,-.25,.4]);
+  screwAt(pl,'k1',[0,-.025,.62],[0,-1,0]);screwAt(pl,'k2',[.54,-.025,-.31],[0,-1,0]);screwAt(pl,'k3',[-.54,-.025,-.31],[0,-1,0]);
+  d.mov.plate={get:()=>pl,p:[1.5,-1.07,1.3],e:[0,0,0]};
+  d.flipPose={p:V(-.2,-.07,.5),q:new W.Quaternion().setFromEuler(new W.Euler(0,0,PI))};
+  d.liftPose={p:V(-2.1,-.15,.8),q:new W.Quaternion()};
+  const flipped=(x,y,z)=>[-x-.2,-y-.07,z+.5];
+  d.cams={home:[[.5,2.4,7.0],[0,.3,0]],kbottom:[[-.2,4.2,2.9],[-.2,.85,.5]],discZ:[[-.45,2.3,2.0],flipped(.25,-.83,.32)],
+    wireZ:[[.1,2.3,1.7],flipped(-.3,-.85,0)],swZ:[[-.8,2.3,1.6],flipped(.6,-.83,-.1)],pinZ:[[.4,.5,1.7],[0,-.9,0]],scaleZ:[[.3,3.1,1.0],[0,-.5,0]]};
+  d.turnOn=done=>{tween(.2,e=>{sw.rotation.z=-.4*e;},()=>{d.led.material.userData.keepE=true;d.led.material.color.set('#ff5a3c');d.led.material.emissive.set('#ff3a1c');done();});};
+  d.spin=null;
+  d.emit={p:V(-1.05,1.0,0),dir:V(-.3,1,0),spread:.25,speed:1.2,colors:[0xffffff,0xe6eef2],grow:4};
+  return d;
+}
+
+/* ================= RICE COOKER ================= */
+function makeGasket(bad){
+  const g=new W.Group();
+  M_(new W.TorusGeometry(.9,.05,10,60,bad?PI*1.8:PI*2),mat(bad?'#8a7a5a':'#e1e4df',{roughness:.9}),g,[0,0,0],[PI/2,0,0]);
+  if(bad)M_(new W.BoxGeometry(.16,.05,.06),mat('#5a4a30'),g,[.6,0,.62],[0,.8,0]);
+  tag(g,'gasket');anchor(g,'gasket',[0,-.1,.9]);return g;
+}
+function buildCooker(cfg){
+  const d=newD(V(0,-.95,-1.0)),R=d.root;
+  const C=new W.Group();R.add(C);d.C=C;d.Chome=V(0,0,0);
+  M_(cyl(1.05,1.0,1.4,44,true),mat('#f2f0ea',{side:W.DoubleSide}),C,[0,-.38,0]);
+  M_(new W.TorusGeometry(1.03,.04,8,48),mat('#d9d6cc'),C,[0,.32,0],[PI/2,0,0]);
+  M_(cyl(.98,.98,.03,40),mat('#6b6f74',{metalness:.4}),C,[0,-.9,0]);
+  tag(C,'cooker');anchor(C,'cooker',[0,1.1,0]);
+  const sens=M_(cyl(.15,.15,.08,24),mat('#c9cdd1',{metalness:.6}),C,[0,-.85,0]);tag(sens,'sensor');anchor(C,'sensor',[0,-.7,0]);
+  if(cfg.crust)dirt(C,'crust',cyl(.18,.18,.02,24),'#3a2412',[0,-.8,0],[0,0,0],.96);
+  /* inner pot */
+  const pot=new W.Group();pot.position.set(0,-.3,0);C.add(pot);
+  M_(cyl(.9,.85,1.1,40,true),mat('#c8ccd0',{metalness:.6,roughness:.3,side:W.DoubleSide}),pot);
+  M_(cyl(.85,.85,.02,40),mat('#3a3d42'),pot,[0,-.54,0]);
+  M_(cyl(.87,.87,.02,40),mat('#fbfaf5',{roughness:1}),pot,[0,.05,0]);
+  tag(pot,'pot');anchor(pot,'pot',[0,.75,0]);
+  d.mov.pot={get:()=>pot,p:[-2.3,-.55,.9],e:[0,0,0]};
+  /* front panel */
+  M_(new W.BoxGeometry(.86,.36,.02),mat('#1d2226'),C,[0,-.3,1.04]);
+  const bA=M_(new W.BoxGeometry(.08,.05,.01),mat('#d6b25a',{metalness:.5}),C,[-.07,-.3,1.055]);
+  const bB=M_(new W.BoxGeometry(.08,.05,.01),mat('#d6b25a',{metalness:.5}),C,[.07,-.3,1.055]);
+  tag(bA,'bA');tag(bB,'bB');anchor(C,'bA',[-.07,-.3,1.08]);anchor(C,'bB',[.07,-.3,1.08]);
+  if(cfg.pdirt)dirt(C,'pdirt',new W.BoxGeometry(.3,.12,.01),'#111',[0,-.3,1.064],[0,0,0]);
+  const pn=new W.Group();pn.position.set(0,-.3,1.1);C.add(pn);
+  M_(new W.BoxGeometry(.9,.4,.06),mat('#3a4046'),pn);
+  tag(pn,'panel');anchor(pn,'panel',[0,.3,.05]);
+  d.btn=M_(cyl(.08,.08,.04,20),mat('#e9914c'),pn,[.22,0,.04],[PI/2,0,0]);tag(d.btn,'btn');anchor(pn,'btn',[.22,.12,.06]);
+  M_(cyl(.06,.06,.03,16),mat('#9aa5ab'),pn,[-.04,0,.04],[PI/2,0,0]);
+  d.led=M_(new W.SphereGeometry(.03,10,8),mat('#3a1a10'),pn,[-.3,.1,.04]);
+  screwAt(pn,'p1',[-.38,-.13,.035],[0,0,1]);screwAt(pn,'p2',[.38,-.13,.035],[0,0,1]);
+  d.mov.panel={get:()=>pn,p:[1.7,-1.05,1.6],e:[-PI/2,0,0]};
+  /* lid */
+  const lp=new W.Group();lp.position.set(0,.34,-1.0);C.add(lp);d.lid=lp;
+  M_(cyl(1.06,1.06,.16,44),mat('#f7f6f1'),lp,[0,.08,1.0]);
+  M_(new W.SphereGeometry(1.06,44,16,0,PI*2,0,PI/2),mat('#f7f6f1'),lp,[0,.16,1.0]).scale.set(1,.25,1);
+  M_(cyl(.12,.14,.1,20),mat('#9aa5ab'),lp,[0,.45,.6]);
+  M_(new W.BoxGeometry(.4,.12,.16),mat('#d0d4d6'),lp,[0,.12,2.06]);
+  tag(lp,'lid');anchor(lp,'lid',[0,.55,1.7]);
+  slot('gasket',lp,[0,-.01,1.0],[0,0,0],s=>makeGasket(s==='bad'),cfg.gasket||'ok');
+  /* underside */
+  M_(new W.TorusGeometry(.6,.06,10,40),mat('#b8743a',{metalness:.4}),C,[0,-.97,0],[PI/2,0,0]);
+  slot('rfuse',C,[.4,-1.0,.3],[0,0,0],s=>capsule(s==='bad','rA','rB','rfuse',.2),cfg.rfuse||'ok');
+  M_(new W.BoxGeometry(.4,.22,.2),mat('#1d1f22'),C,[0,-.9,-.92]);
+  const pA=M_(new W.SphereGeometry(.04,10,8),mat('#e3e7ea',{metalness:.6}),C,[0,-1.0,-.78]);tag(pA,'pA');anchor(C,'pA',[0,-1.02,-.78]);
+  tube(C,[[0,-1.0,-.78],[0,-1.0,-.52]],'#2a2d31',.025);
+  d.pj=M_(new W.SphereGeometry(.06,12,8),mat(cfg.joint?'#7d817c':'#e8ecef',{metalness:cfg.joint?.1:.7,roughness:cfg.joint?.9:.25}),C,[0,-1.0,-.5]);tag(d.pj,'pj');anchor(C,'pj',[0,-1.04,-.5]);
+  if(cfg.joint)d.pjCrack=M_(new W.TorusGeometry(.065,.01,6,16),mat('#2c2f2b'),C,[0,-1.0,-.5],[PI/2,0,0]);
+  tube(C,[[0,-1.0,-.48],[0,-1.0,-.3],[.2,-1.0,-.1]],'#2a2d31',.025);
+  const pB=M_(new W.SphereGeometry(.04,10,8),mat('#e3e7ea',{metalness:.6}),C,[0,-1.0,-.3]);tag(pB,'pB');anchor(C,'pB',[0,-1.02,-.3]);
+  /* bottom plate */
+  const pl=new W.Group();pl.position.set(0,-1.07,0);C.add(pl);
+  M_(cyl(.98,.98,.03,44),mat('#d7d9d4'),pl);
+  tag(pl,'plate');anchor(pl,'plate',[.5,-.25,.4]);
+  screwAt(pl,'r1',[0,-.02,.7],[0,-1,0]);screwAt(pl,'r2',[.6,-.02,-.35],[0,-1,0]);screwAt(pl,'r3',[-.6,-.02,-.35],[0,-1,0]);
+  d.mov.plate={get:()=>pl,p:[1.6,-1.07,1.5],e:[0,0,0]};
+  d.flipPose={p:V(-.1,-.34,.4),q:new W.Quaternion().setFromEuler(new W.Euler(0,0,PI))};
+  const fl=(x,y,z)=>[-x-.1,-y-.34,z+.4];
+  d.cams={home:[[.6,2.6,6.8],[0,0,0]],cbottom:[[-.1,4.0,2.8],[-.1,.7,.4]],rfuseZ:[[-.5,2.1,1.9],fl(.4,-1.0,.3)],pjZ:[[-.1,2.1,1.3],fl(0,-1.0,-.5)],
+    gasketZ:[[0,1.9,1.6],[0,1.25,-.95]],sensorZ:[[.3,1.5,1.5],[0,-.85,0]],panelZ:[[.4,-.1,3.0],[0,-.3,1.05]]};
+  d.turnOn=done=>{const b=d.btn,z=b.position.z;tween(.15,e=>{b.position.z=z-.02*e;},()=>tween(.15,e=>{b.position.z=z-.02*(1-e);},()=>{
+    d.led.material.userData.keepE=true;d.led.material.color.set('#5fe08f');d.led.material.emissive.set('#2fbf6a');done();}));};
+  d.emit={p:V(0,.9,-.4),dir:V(0,1,0),spread:.2,speed:1.0,colors:[0xffffff,0xe6eef2],grow:4};
+  return d;
+}
+
+/* ================= REMOTE ================= */
+function makeXtal(bad){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(.18,.07,.09),mat('#e2a03a'),g,[0,.035,0]);
+  M_(new W.BoxGeometry(.02,.03,.02),mat('#c9cdd1',{metalness:.6}),g,[-.07,-.01,0]);M_(new W.BoxGeometry(.02,.03,.02),mat('#c9cdd1',{metalness:.6}),g,[.07,-.01,0]);
+  if(bad){M_(new W.BoxGeometry(.02,.076,.1),mat('#1a1208'),g,[.02,.036,0],[0,0,.35]);M_(new W.BoxGeometry(.05,.03,.05),mat('#1f6b47'),g,[.075,.065,.03]);}
+  tag(g,'xtal');anchor(g,'xtal',[0,.14,0]);return g;
+}
+function makeBat(leak){
+  const g=new W.Group();
+  [-.16,.16].forEach(z=>{
+    M_(cyl(.08,.08,.7,20),mat('#c9a227',{metalness:.4}),g,[.05,0,z],[0,0,PI/2]);
+    M_(cyl(.08,.08,.12,20),mat('#1b1c1f'),g,[-.35,0,z],[0,0,PI/2]);
+    if(leak){M_(new W.SphereGeometry(.06,10,8),mat('#f1efe6',{roughness:1}),g,[.4,.03,z]);M_(new W.SphereGeometry(.045,10,8),mat('#e7f0d8',{roughness:1}),g,[-.4,.04,z+.03]);}
+  });
+  tag(g,'bat');anchor(g,'bat',[0,.16,0]);return g;
+}
+function buildRemote(cfg){
+  const d=newD(null),R=d.root;
+  const Rm=new W.Group();Rm.position.set(0,0,.3);R.add(Rm);
+  M_(new W.BoxGeometry(2.8,.14,.9),mat('#2b2e33'),Rm,[0,-1.02,0]);
+  M_(new W.BoxGeometry(1.9,.03,.78),mat('#1f6b47'),Rm,[.45,-.935,0]);
+  M_(new W.BoxGeometry(.88,.02,.78),mat('#24272c'),Rm,[-.95,-.94,0]);
+  [-.2,.2,.6,1.0].forEach(x=>[-.22,0,.22].forEach(z=>M_(cyl(.06,.06,.012,16),mat('#15171a'),Rm,[x,-.915,z])));
+  if(cfg.pads)dirt(Rm,'pads',new W.BoxGeometry(1.5,.01,.62),'#4a3a22',[.4,-.906,0],[0,0,0],.85);
+  if(cfg.spill){const s=dirt(Rm,'spill',cyl(.5,.5,.012,30),'#8a5a1a',[.35,-.905,.05],[0,0,0],.8);s.scale.set(1.2,1,.7);}
+  slot('xtal',Rm,[1.0,-.92,-.3],[0,0,0],s=>makeXtal(s==='bad'),cfg.xtal||'ok');
+  /* IR LED */
+  const led=new W.Group();led.position.set(1.46,-.9,0);Rm.add(led);d.irLed=led;
+  d.irMat=mat('#b9a8ff',{transparent:true,opacity:.85});
+  M_(new W.SphereGeometry(.07,16,12),d.irMat,led,[.04,0,0]);M_(cyl(.07,.07,.08,16),d.irMat,led,[0,0,0],[0,0,PI/2]);
+  if(cfg.ir)led.rotation.z=-.35;
+  [-.03,.03].forEach(z=>tube(Rm,[[1.42,-.9,z],[1.35,-.91,z],[1.28,-.92,z]],'#c9cdd1',.01));
+  d.ij=[-.03,.03].map(z=>{const j=M_(new W.SphereGeometry(.035,10,8),mat(cfg.ir?'#7d817c':'#e8ecef',{metalness:cfg.ir?.1:.7,roughness:cfg.ir?.9:.25}),Rm,[1.28,-.92,z]);tag(j,'ij');return j;});
+  anchor(Rm,'ij',[1.28,-.88,0]);d.irOK=!cfg.ir;
+  /* battery bay */
+  [-.16,.16].forEach(z=>{M_(new W.TorusGeometry(.04,.012,6,12),mat('#c9cdd1',{metalness:.7}),Rm,[-1.36,-.88,z],[0,PI/2,0]);M_(new W.BoxGeometry(.02,.12,.12),mat('#c9cdd1',{metalness:.7}),Rm,[-.53,-.88,z]);});
+  if(cfg.rust)dirt(Rm,'rust',new W.BoxGeometry(.08,.08,.5),'#cfe0b8',[-1.36,-.88,0],[0,0,0],.95);
+  slot('bat',Rm,[-.95,-.88,0],[0,0,0],s=>makeBat(s==='bad'),cfg.bat||'ok');
+  d.mov.batOut={get:()=>d.obj.bat,p:[-1.9,-1.0,1.4],e:[0,0,0]};
+  screwAt(Rm,'q1',[-.52,-.93,.36],[0,1,0]);
+  /* top shell */
+  const top=new W.Group();top.position.set(.45,-.86,0);Rm.add(top);
+  M_(new W.BoxGeometry(1.9,.16,.9),mat('#3a3e44'),top);
+  tag(top,'rtop');anchor(top,'rtop',[0,.2,.3]);
+  [-.6,-.25,.1,.45].forEach(x=>[-.22,0,.22].forEach(z=>M_(cyl(.06,.06,.04,16),mat('#9aa5ab'),top,[x,.1,z])));
+  d.btn=M_(cyl(.08,.08,.05,18),mat('#e0352b'),top,[.75,.1,.22]);tag(d.btn,'btn');anchor(top,'btn',[.75,.16,.22]);
+  d.mov.rtop={get:()=>top,p:[.9,-1.02,1.8],e:[0,0,0]};
+  const bc=new W.Group();bc.position.set(-.95,-.86,0);Rm.add(bc);
+  M_(new W.BoxGeometry(.9,.16,.9),mat('#34383e'),bc);
+  for(let i=-2;i<=2;i++)M_(new W.BoxGeometry(.03,.01,.6),mat('#25282c'),bc,[i*.1,.085,0]);
+  tag(bc,'bcov');anchor(bc,'bcov',[0,.2,0]);
+  d.mov.bcov={get:()=>bc,p:[-1.3,-1.02,1.7],e:[0,0,0]};
+  /* TV + phone */
+  const tv=new W.Group();tv.position.set(2.3,-.3,-1.5);tv.rotation.y=-.75;R.add(tv);
+  M_(new W.BoxGeometry(1.7,1.05,.1),mat('#141619'),tv);
+  d.screen=M_(new W.PlaneGeometry(1.55,.9),mat('#0b0d10'),tv,[0,0,.051]);
+  M_(new W.BoxGeometry(.5,.05,.3),mat('#141619'),tv,[0,-.77,0]);M_(new W.BoxGeometry(.08,.3,.08),mat('#141619'),tv,[0,-.62,0]);
+  const ph=new W.Group();ph.position.set(1.9,-1.07,1.3);R.add(ph);
+  M_(new W.BoxGeometry(.36,.03,.7),mat('#1a1c20'),ph);M_(new W.BoxGeometry(.32,.005,.62),mat('#2c4a66'),ph,[0,.017,0]);
+  tag(ph,'phone');anchor(ph,'phone',[0,.1,0]);
+  d.cams={home:[[.6,1.9,3.9],[.2,-.85,.3]],batZ:[[-.9,.2,1.5],[-.95,-.9,.3]],padZ:[[.4,.15,1.6],[.4,-.92,.3]],irZ:[[2.0,-.45,1.2],[1.4,-.9,.3]],
+    spillZ:[[.3,.2,1.6],[.35,-.92,.35]],xtalZ:[[1.15,-.3,1.2],[1.0,-.9,0]]};
+  d.turnOn=done=>{const b=d.btn,y=b.position.y;tween(.15,e=>{b.position.y=y-.025*e;},()=>tween(.15,e=>{b.position.y=y-.025*(1-e);},()=>{
+    d.irMat.emissive.set('#8a5cff');d.screen.material.color.set('#6ec6ff');d.screen.material.emissive.set('#2a7fd0');done();}));};
+  d.emit={p:V(1.55,-.9,.3),dir:V(.55,.25,-.75),spread:.05,speed:2.6,colors:[0xa98bff,0xd2c4ff]};
+  return d;
+}
+function irCheck(done){
+  camTo('irZ',()=>{
+    const ok=D.irOK,bp=$('#beep');bp.hidden=false;bp.className='beep '+(ok?'yes':'no');bp.innerHTML=svg(ok?'look':'no',2.4);
+    if(ok){D.irMat.emissive.set('#8a5cff');tone(1800,.2,'sine',.04);}else tone(120,.15,'sine',.03);
+    setTimeout(()=>{bp.hidden=true;D.irMat.emissive.set('#000000');done();},1500);
+  });
+}
+
+/* ================= MICROWAVE ================= */
+function makeDoorSw(bad){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(.16,.1,.12),mat('#2b2e33'),g);
+  M_(new W.BoxGeometry(.045,.035,.14),mat(bad?'#8b5a2b':'#e0a030'),g,[.07,.04,bad?.08:0],[bad?.5:0,0,0]);
+  if(bad)M_(new W.BoxGeometry(.02,.045,.07),mat('#111'),g,[.07,.03,-.02]);
+  tag(g,'mwsw');anchor(g,'mwsw',[0,.08,0]);
+  const a=M_(new W.SphereGeometry(.028,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.09,-.03,0]);
+  const b=M_(new W.SphereGeometry(.028,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.09,-.03,.07]);
+  tag(a,'swA');tag(b,'swB');anchor(g,'swA',[-.09,-.06,0]);anchor(g,'swB',[-.09,-.06,.07]);
+  return g;
+}
+function makeMag(bad){
+  const g=new W.Group();
+  M_(cyl(.15,.15,.32,20),mat(bad?'#2a1c12':'#8a9196',{metalness:.5,roughness:.35}),g,[0,0,0],[0,0,PI/2]);
+  for(let i=-2;i<=2;i++)M_(new W.BoxGeometry(.012,.28,.28),mat(bad?'#1c120a':'#aab1b6',{metalness:.4}),g,[i*.05,0,0],[0,0,PI/2]);
+  if(bad)M_(new W.SphereGeometry(.085,10,8),mat('#140c06'),g,[0,.1,.1]).scale.set(1.2,.6,.5);
+  tag(g,'mag');anchor(g,'mag',[0,.2,0]);
+  const a=M_(new W.SphereGeometry(.032,10,8),mat('#e3e7ea',{metalness:.6}),g,[0,.16,.15]);
+  const b=M_(new W.SphereGeometry(.032,10,8),mat('#e3e7ea',{metalness:.6}),g,[0,.16,-.15]);
+  tag(a,'mgA');tag(b,'mgB');anchor(g,'mgA',[0,.19,.16]);anchor(g,'mgB',[0,.19,-.16]);
+  return g;
+}
+function buildMicrowave(cfg){
+  const d=newD(V(.95,-1.08,-.7)),R=d.root;
+  const BODY='#e7e9e6',DARK='#24272b';
+  const CY=-.5,hx=1.15,hy=.6,hz=.75;
+  /* shell: open at the back so the bay behind the back panel is a real cavity */
+  M_(new W.BoxGeometry(2.3,.04,1.5),mat(BODY),R,[0,CY+hy,0]);
+  M_(new W.BoxGeometry(2.3,.04,1.5),mat(BODY),R,[0,CY-hy,0]);
+  M_(new W.BoxGeometry(.04,1.2,1.5),mat(BODY),R,[-hx,CY,0]);
+  M_(new W.BoxGeometry(.04,1.2,1.5),mat(BODY),R,[hx,CY,0]);
+  M_(new W.BoxGeometry(1.0,1.2,.04),mat(BODY),R,[.65,CY,hz]); /* front wall, panel side only (door side stays open) */
+  M_(new W.BoxGeometry(2.32,.05,1.52),mat('#c7cbc6'),R,[0,CY-.6,0]);
+  /* door */
+  const dp=new W.Group();dp.position.set(-1.15,CY,.76);R.add(dp);d.door=dp;
+  M_(new W.BoxGeometry(1.3,1.0,.08),mat(BODY),dp,[.66,0,.04]);
+  M_(new W.BoxGeometry(.98,.72,.02),mat('#30383d',{transparent:true,opacity:.82}),dp,[.66,0,.09]);
+  for(let i=-3;i<=3;i++)M_(new W.BoxGeometry(.01,.7,.004),mat('#555'),dp,[.66+i*.13,0,.1]);
+  M_(cyl(.018,.018,.78,8),mat('#9aa5ab',{metalness:.6}),dp,[1.22,0,.14]);
+  tag(dp,'door');anchor(dp,'door',[.9,0,.17]);
+  /* turntable (centered under the door opening, not the whole unit) */
+  const TX=-.5;
+  const tray=M_(cyl(.46,.46,.025,40),mat('#dfe3e6',{transparent:true,opacity:.88}),R,[TX,CY-.53,.05]);
+  tag(tray,'tray');anchor(R,'tray',[TX,CY-.46,.05]);
+  d.mov.tray={get:()=>tray,p:[-2.0,-1.0,1.5],e:[0,0,0]};
+  M_(new W.TorusGeometry(.4,.028,8,30),mat('#aeb3b6'),R,[TX,CY-.57,.05],[PI/2,0,0]);
+  if(cfg.dirty)dirt(R,'gunk2',new W.TorusGeometry(.4,.045,8,30),'#3a2816',[TX,CY-.57,.05],[PI/2,0,0],.92);
+  /* control panel */
+  const pn=new W.Group();pn.position.set(.65,CY+.1,.76);R.add(pn);
+  M_(new W.BoxGeometry(.86,1.0,.06),mat(DARK),pn);
+  for(let gy=-1;gy<=1;gy++)for(let gx=-1;gx<=1;gx++)M_(cyl(.035,.035,.02,14),mat('#52575c'),pn,[gx*.2,gy*.18-.1,.034],[PI/2,0,0]);
+  d.btn=M_(cyl(.045,.045,.022,16),mat('#e9914c'),pn,[0,.38,.034],[PI/2,0,0]);tag(d.btn,'btn');anchor(pn,'btn',[0,.42,.05]);
+  d.led=M_(new W.SphereGeometry(.028,10,8),mat('#3a1a10'),pn,[-.3,.38,.034]);
+  tag(pn,'panel');anchor(pn,'panel',[0,.55,.1]);
+  screwAt(pn,'p1',[-.38,-.46,.035],[0,0,1]);screwAt(pn,'p2',[.38,-.46,.035],[0,0,1]);
+  /* body-side contacts, mounted on the front wall's outer face: stay put when the panel is lifted away */
+  const bA=M_(new W.SphereGeometry(.025,8,6),mat('#e3e7ea',{metalness:.6}),R,[.25,CY-.36,.775]);
+  const bB=M_(new W.SphereGeometry(.025,8,6),mat('#e3e7ea',{metalness:.6}),R,[1.05,CY-.36,.775]);
+  tag(bA,'bA');tag(bB,'bB');anchor(R,'bA',[.25,CY-.34,.8]);anchor(R,'bB',[1.05,CY-.34,.8]);
+  if(cfg.pdirt)dirt(R,'pdirt',new W.BoxGeometry(.6,.6,.01),'#111',[.65,CY-.36,.772],[0,0,0],.85);
+  d.mov.panel={get:()=>pn,p:[1.9,-1.0,1.9],e:[-PI/2,0,0]};
+  /* back panel + bay */
+  const bp=new W.Group();bp.position.set(0,CY,-.73);R.add(bp);
+  M_(new W.BoxGeometry(2.26,1.14,.05),mat(DARK),bp);
+  tag(bp,'backp');anchor(bp,'backp',[0,.65,0]);
+  screwAt(bp,'bk1',[-.9,.5,.028],[0,0,1]);screwAt(bp,'bk2',[.9,.5,.028],[0,0,1]);screwAt(bp,'bk3',[0,-.5,.028],[0,0,1]);
+  d.mov.backp={get:()=>bp,p:[2.6,-1.06,-2.1],e:[0,0,0]};
+  slot('mwsw',R,[-.65,CY+.3,-.62],[0,PI/2,0],s=>makeDoorSw(s==='bad'),cfg.sw||'ok');
+  slot('mwfuse',R,[0,CY+.3,-.62],[0,0,0],s=>capsule(s==='bad','fsA','fsB','mwfuse',.2),cfg.fuse||'ok');
+  slot('mag',R,[.65,CY+.3,-.6],[0,0,0],s=>makeMag(s==='bad'),cfg.mag||'ok');
+  d.cams={home:[[.4,2.7,9.6],[-.2,-.2,0]],inside:[[0,.3,-3.3],[0,-.1,-.6]],
+    swZ:[[-.65,.0,-2.2],[-.65,-.2,-.62]],fuseZ:[[0,.0,-2.2],[0,-.2,-.62]],magZ:[[.65,.0,-2.2],[.65,-.2,-.6]],
+    trayZ:[[-.5,-.05,2.5],[-.5,-.72,.1]],panelZ:[[1.0,-.5,2.3],[.65,-.6,.85]]};
+  d.turnOn=done=>{const b=d.btn,z=b.position.z;tween(.15,e=>{b.position.z=z-.015*e;},()=>tween(.15,e=>{b.position.z=z-.015*(1-e);},()=>{
+    d.led.material.userData.keepE=true;d.led.material.color.set('#5fe08f');d.led.material.emissive.set('#2fbf6a');done();}));};
+  d.spin=dt=>{tray.rotation.y+=dt*1.1;};
+  d.emit={p:V(.4,CY+.55,0),dir:V(0,1,0),spread:.5,speed:.9,colors:[0xfff2c0,0xffffff]};
+  return d;
+}
+
+/* ================= TOASTER ================= */
+function buildToaster(cfg){
+  const d=newD(V(.2,-.98,-.6)),R=d.root;
+  const K=new W.Group();K.position.set(0,.1,0);R.add(K);d.K=K;d.Khome=K.position.clone();
+  M_(new W.BoxGeometry(1.6,.9,1.1),mat('#c9cdd1',{metalness:.5,roughness:.35}),K,[0,.4,0]);
+  M_(new W.BoxGeometry(1.0,.08,.7),mat('#2a2d31'),K,[0,.86,0]);
+  M_(new W.BoxGeometry(.18,.06,.5),mat('#111'),K,[-.25,.9,0]);
+  M_(new W.BoxGeometry(.18,.06,.5),mat('#111'),K,[.25,.9,0]);
+  tag(K,'toaster');anchor(K,'toaster',[0,1.0,0]);
+  M_(cyl(.12,.12,.08,20),mat('#e9914c'),K,[0,.4,.57],[PI/2,0,0]);
+  const lev=new W.Group();lev.position.set(.82,.55,0);K.add(lev);d.lever=lev;
+  M_(new W.BoxGeometry(.08,.3,.12),mat('#3a3e44'),lev);
+  tag(lev,'lever');anchor(K,'lever',[.82,.72,0]);
+  /* underside */
+  const pl=new W.Group();pl.position.set(0,-.02,0);K.add(pl);
+  M_(new W.BoxGeometry(1.5,.04,1.0),mat('#aeb3b6'),pl);
+  tag(pl,'plate');anchor(pl,'plate',[.5,-.25,.35]);
+  screwAt(pl,'t1',[0,-.02,.45],[0,-1,0]);screwAt(pl,'t2',[.6,-.02,-.3],[0,-1,0]);screwAt(pl,'t3',[-.6,-.02,-.3],[0,-1,0]);
+  d.mov.plate={get:()=>pl,p:[1.6,-1.07,1.4],e:[0,0,0]};
+  slot('tfuse',K,[-.5,-.015,-.3],[0,0,0],s=>capsule(s==='bad','tfA','tfB','tfuse',.18),cfg.fuse||'ok');
+  slot('latch',K,[.5,-.015,-.3],[0,0,0],s=>capsule(s==='bad','laA','laB','latch',.16),cfg.latch||'ok');
+  slot('theater',K,[-.1,-.01,.25],[0,0,0],s=>{const g=makeHeater(s==='bad',false);g.scale.set(.32,.55,.55);return g;},cfg.heater||'ok');
+  if(cfg.gunk)dirt(K,'gunk',new W.BoxGeometry(.22,.02,.16),'#3a2412',[-.5,-.005,.3],[0,0,0],.92);
+  const tdA=M_(new W.SphereGeometry(.03,10,8),mat('#e3e7ea',{metalness:.6}),K,[.3,-.015,.3]);tag(tdA,'tdA');anchor(K,'tdA',[.3,0,.3]);
+  const tdB=M_(new W.SphereGeometry(.03,10,8),mat('#e3e7ea',{metalness:.6}),K,[.4,-.015,.3]);tag(tdB,'tdB');anchor(K,'tdB',[.4,0,.3]);
+  if(cfg.tdirt)dirt(K,'tdirt',new W.BoxGeometry(.18,.02,.1),'#111',[.35,-.005,.3],[0,0,0],.9);
+  d.flipPose={p:V(-.2,-.1,.5),q:new W.Quaternion().setFromEuler(new W.Euler(0,0,PI))};
+  const flipped=(x,y,z)=>[-x-.2,-y-.1,z+.5];
+  d.cams={home:[[.5,2.4,7.0],[0,.3,0]],tbottom:[[-.2,4.2,2.9],[-.2,.85,.5]],
+    fuseZ:[[-.2,2.2,1.9],flipped(-.5,-.015,-.3)],latchZ:[[-.2,2.2,1.9],flipped(.5,-.015,-.3)],
+    heaterZ:[[-.2,2.2,1.9],flipped(-.1,-.01,.25)],gunkZ:[[-.2,2.2,1.9],flipped(-.5,-.005,.3)],tdZ:[[-.2,2.2,1.9],flipped(.35,-.005,.3)]};
+  d.turnOn=done=>{const y=lev.position.y;tween(.2,e=>{lev.position.y=y-.15*e;},()=>setTimeout(done,2000));};
+  d.spin=null;
+  d.emit={p:V(0,1.05,0),dir:V(0,1,0),spread:.4,speed:1.0,colors:[0xffffff,0xe6eef2],grow:4};
+  return d;
+}
+
+/* ================= VACUUM ================= */
+function buildVacuum(cfg){
+  const d=newD(V(-.3,-.98,-.5)),R=d.root;
+  const BODY='#d6564a';
+  M_(cyl(.42,.42,1.3,32),mat(BODY,{roughness:.5}),R,[0,-.1,0],[0,0,PI/2]);
+  M_(cyl(.3,.3,.3,24),mat('#2b2e33'),R,[-.72,-.1,0],[0,0,PI/2]);
+  [[-.3,-.42],[.3,-.42]].forEach(([x])=>{M_(cyl(.14,.14,.05,20),mat('#2b2e33'),R,[x,-.5,0],[PI/2,0,0]);});
+  const handle=new W.Group();handle.position.set(.55,.35,0);R.add(handle);
+  M_(new W.TorusGeometry(.22,.035,8,24,PI*1.3),mat('#2b2e33'),handle,[0,0,0],[0,0,-.5]);
+  tube(R,[[.3,.05,0],[.5,.3,0]],'#2b2e33',.04);
+  d.btn=M_(cyl(.045,.045,.03,16),mat('#e9914c'),R,[.42,.12,.1],[PI/2,.3,0]);tag(d.btn,'btn');anchor(R,'btn',[.42,.16,.12]);
+  /* front dust-bin door */
+  const dr=new W.Group();dr.position.set(.68,-.1,0);R.add(dr);
+  M_(cyl(.33,.33,.1,28),mat('#e9c7c2',{transparent:true,opacity:.85}),dr,[0,0,0],[0,0,PI/2]);
+  tag(dr,'door');anchor(dr,'door',[0,.4,0]);
+  if(cfg.filterdirt)dirt(dr,'filterdirt',cyl(.22,.22,.02,24),'#3a2412',[.03,0,0],[0,0,PI/2],.94);
+  d.mov.door={get:()=>dr,p:[1.8,-.9,1.6],e:[0,0,PI/2]};
+  const panel=new W.Group();panel.position.set(-.2,.3,.3);R.add(panel);
+  M_(new W.BoxGeometry(.3,.14,.02),mat('#3a4046'),panel);
+  tag(panel,'panel');anchor(panel,'panel',[0,.14,0]);
+  screwAt(R,'v1',[-.32,.3,.31],[0,0,1]);screwAt(R,'v2',[-.08,.3,.31],[0,0,1]);
+  d.mov.panel={get:()=>panel,p:[-1.8,-1.0,1.8],e:[0,0,0]};
+  slot('vfuse',R,[-.15,-.1,0],[0,0,PI/2],s=>capsule(s==='bad','vfA','vfB','vfuse',.18),cfg.fuse||'ok');
+  const swA=M_(new W.SphereGeometry(.025,8,6),mat('#e3e7ea',{metalness:.6}),R,[-.25,.3,.26]);tag(swA,'swA');anchor(R,'swA',[-.25,.32,.26]);
+  const swB=M_(new W.SphereGeometry(.025,8,6),mat('#e3e7ea',{metalness:.6}),R,[-.15,.3,.26]);tag(swB,'swB');anchor(R,'swB',[-.15,.32,.26]);
+  if(cfg.swdirt)dirt(R,'swdirt',new W.BoxGeometry(.2,.1,.01),'#111',[-.2,.3,.263],[0,0,0],.85);
+  if(cfg.cord)d.wf=wireFix(R,[0,-.5,-.6],[0,-.5,-.1],'#2a2d31','burnt');else tube(R,[[0,-.5,-.6],[0,-.5,-.1]],'#2a2d31');
+  const hoseStart=V(.95,.05,0);
+  if(cfg.clog){
+    const clog=M_(new W.SphereGeometry(.08,10,8),mat('#5a4a30'),R,[1.3,-.55,.3]);tag(clog,'h1');anchor(R,'h1',[1.3,-.48,.3]);
+    const clog2=M_(new W.SphereGeometry(.06,10,8),mat('#6b5a3a'),R,[1.4,-.6,.2]);tag(clog2,'h2');anchor(R,'h2',[1.4,-.53,.2]);
+    d.hair=[clog,clog2];
+  }
+  tube(R,[hoseStart.toArray(),[1.3,-.3,.3],[1.5,-.6,.3]],'#8a2f28',.09);
+  const hoseEnd=new W.Group();hoseEnd.position.set(1.5,-.6,.3);R.add(hoseEnd);
+  M_(cyl(.1,.1,.2,20),mat('#2b2e33'),hoseEnd);tag(hoseEnd,'hoseEnd');anchor(R,'hoseEnd',[1.5,-.45,.3]);
+  d.mov.hoseEnd={get:()=>hoseEnd,p:[2.6,-.9,1.8],e:[0,0,0]};
+  d.cams={home:[[.5,2.3,6.8],[0,0,0]],doorZ:[[.9,1.3,2.6],[.68,-.1,.5]],panelZ:[[-.9,1.3,2.2],[-.2,.3,.5]],
+    fuseZ:[[-.9,.6,2.2],[-.15,-.1,.3]],cordZ:[[.6,-.2,1.6],[0,-.5,-.35]],clogZ:[[2.2,.0,2.4],[1.4,-.55,.6]]};
+  d.turnOn=done=>{const b=d.btn,z=b.position.z;tween(.15,e=>{b.position.z=z-.02*e;},()=>tween(.15,e=>{b.position.z=z-.02*(1-e);},()=>{
+    tone(110,2,'sawtooth',.03);setTimeout(done,2200);}));};
+  d.spin=null;
+  d.emit={p:V(-.8,-.1,0),dir:V(-1,0,0),spread:.2,speed:2.2,colors:[0xd8d8d8,0xeeeeee],grow:3};
+  return d;
+}
+
+/* ================= tweens & movement ================= */
+const tweens=[];
+const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+function tween(dur,fn,done){tweens.push({t:0,dur,fn,done});}
+function tweenLocal(o,pos,dur,done){const p0=o.position.clone();tween(dur,e=>o.position.lerpVectors(p0,pos,e),done);}
+function tweenWorld(o,p1,q1,dur,done,s1){const p0=o.position.clone(),q0=o.quaternion.clone(),s0=o.scale.x;
+  tween(dur,e=>{o.position.lerpVectors(p0,p1,e);o.quaternion.copy(q0).slerp(q1,e);if(s1!=null)o.scale.setScalar(s0+(s1-s0)*e);},done);}
+function awayObj(o,p,eu,dur,done){
+  o.userData.ret={parent:o.parent,p:o.position.clone(),q:o.quaternion.clone()};scene.attach(o);
+  tweenWorld(o,V(p[0],p[1],p[2]),new W.Quaternion().setFromEuler(new W.Euler(eu[0],eu[1],eu[2])),dur,done);
+}
+function returnObj(o,dur,done){
+  const h=o.userData.ret;h.parent.updateMatrixWorld(true);
+  const wp=h.parent.localToWorld(h.p.clone()),pq=new W.Quaternion();h.parent.getWorldQuaternion(pq);
+  tweenWorld(o,wp,pq.multiply(h.q),dur,()=>{h.parent.attach(o);o.position.copy(h.p);o.quaternion.copy(h.q);done&&done();});
+}
+let camKey=null;
+function camTo(k,done){
+  if(camKey===k||!D.cams[k]){done&&done();return;}camKey=k;
+  const c=D.cams[k],p1=V(...c[0]),t1=V(...c[1]),p0=camera.position.clone(),t0=controls.target.clone();
+  tween(.9,e=>{camera.position.lerpVectors(p0,p1,e);controls.target.lerpVectors(t0,t1,e);},done);
+}
+function screwOut(id,done){
+  const s=D.screws[id],h=s.userData.home,dir=s.userData.dir,r0=s.userData.inner.rotation.y;tone(420,.25,'triangle',.04);buzz(60);
+  tween(.55,e=>{s.position.copy(h).addScaledVector(dir,.5*e);s.userData.inner.rotation.y=r0+e*14;},()=>{s.visible=false;done();});
+}
+function screwIn(id,done){
+  const s=D.screws[id],h=s.userData.home,dir=s.userData.dir,r0=s.userData.inner.rotation.y;s.visible=true;tone(380,.25,'triangle',.04);buzz(60);
+  tween(.55,e=>{s.position.copy(h).addScaledVector(dir,.5*(1-e));s.userData.inner.rotation.y=r0-e*14;},done);
+}
+function trashSlot(key,done){
+  const o=D.obj[key];scene.attach(o);const p=o.position.clone().add(V(-.6,2.2,.8));buzz(50);
+  tweenWorld(o,p,o.quaternion.clone(),.8,()=>{o.visible=false;scene.remove(o);D.obj[key]=null;done();},.5);
+}
+function insertSlot(key,done){
+  const s=D.slots[key],o=s.make('new');boxContent.visible=false;
+  const wp=boxG.localToWorld(V(0,.4,0));o.position.copy(wp);o.scale.setScalar(.4);scene.add(o);
+  s.parent.updateMatrixWorld(true);
+  const tp=s.parent.localToWorld(V(s.p[0],s.p[1],s.p[2])),pq=new W.Quaternion();s.parent.getWorldQuaternion(pq);
+  const tq=pq.multiply(new W.Quaternion().setFromEuler(new W.Euler(s.r[0],s.r[1],s.r[2])));
+  tweenWorld(o,tp,tq,1,()=>{s.parent.attach(o);o.position.set(s.p[0],s.p[1],s.p[2]);o.rotation.set(s.r[0],s.r[1],s.r[2]);o.scale.setScalar(1);D.obj[key]=o;tone(700,.08);buzz(40);done();},1);
+}
+function pourFromBox(target,done){
+  const b=boxContent.children[0];if(!b){done();return;}
+  awayObj(b,target,[0,0,0],.8,()=>{const q0=b.quaternion.clone(),q1=new W.Quaternion().setFromEuler(new W.Euler(0,0,2.0));
+    tween(.5,e=>b.quaternion.copy(q0).slerp(q1,e),()=>{tone(900,.15,'sine',.04);buzz(40);setTimeout(()=>returnObj(b,.8,done),350);});});
+}
+
+/* ================= step builders ================= */
+const S={
+  unplug:()=>({ic:'plugOut',say:'안전 먼저! 콘센트에서 플러그부터 뽑아요.',act:'tap',ids:['plug'],cam:'home',run:d=>tweenWorld(plug,PLUG_OUT.p,PLUG_OUT.q,.7,d)}),
+  plugin:()=>({ic:'plugIn',say:'플러그를 다시 꽂아요.',act:'tap',ids:['plug'],cam:'home',run:d=>tweenWorld(plug,PLUG_IN.p,PLUG_IN.q,.7,()=>{tone(200,.08,'square',.05);d();})}),
+  sOut:(ids,cam,say)=>({ic:'driver',say:say||'드라이버로 나사를 하나씩 풀어요.',act:'multi',ids,cam,run1:screwOut}),
+  sIn:(ids,cam)=>({ic:'driver',say:'나사를 다시 조여요.',act:'multi',ids,cam,run1:screwIn}),
+  away:(id,key,cam,say)=>({ic:'lift',say,act:'tap',ids:[id],cam,run:d=>{const m=D.mov[key];awayObj(m.get(),m.p,m.e,1,d);}}),
+  back:(id,key,cam,say)=>({ic:'down',say,act:'tap',ids:[id],cam,run:d=>returnObj(D.mov[key].get(),1,d)}),
+  test:(ids,beep,cam,say)=>({ic:'tester',say,act:'tester',ids,beep,cam}),
+  look:(id,zoom,cam,say)=>({ic:'look',say,act:'tap',ids:[id],cam,run:d=>camTo(zoom,d)}),
+  trash:(id,key,cam,say)=>({ic:'trash',say,act:'tap',ids:[id],cam,run:d=>trashSlot(key,d)}),
+  insert:(key,cam,say)=>({ic:'box',say,act:'tap',ids:['box'],cam,run:d=>insertSlot(key,d)}),
+  cut:(cam,say)=>({ic:'scissors',say,act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('cut');tone(1500,.05,'square',.04);buzz(50);d();}}),
+  strip:(cam,say)=>({ic:'strip',say:say||'잘린 양쪽 끝 껍질을 살짝 벗겨요.',act:'tap',ids:['wfix'],cam,run:d=>{D.wf.set('stripped');d();}}),
+  solderW:(cam,say)=>({ic:'iron',say:say||'새 선 조각을 대고 인두로 붙여요.',act:'solder',ids:['wfix'],cam,run:d=>{D.wf.set('fixed');d();}}),
+  scrub:(id,n,cam,say)=>({ic:'brush',say,act:'scrub',ids:[id],n,cam}),
+  picks:(ids,cam,say)=>({ic:'pick',say,act:'multi',ids,cam,run1:(id,d)=>{const h=D.hair[+id.slice(1)-1],p0=h.position.clone();tone(520+Math.random()*200,.1,'triangle',.04);buzz(25);
+    tween(.6,e=>{h.position.set(p0.x-1.6*e,p0.y+.8*e,p0.z+.4*e);},()=>{h.visible=false;d();});}}),
+  tap:(ic,id,cam,say,run)=>({ic,say,act:'tap',ids:[id],cam,run}),
+  on:(id,cam,say)=>({ic:'power',say:say||'켜 봐요!',act:'tap',ids:[id],cam,run:d=>D.turnOn(()=>{G.on=true;tone(140,1.6,'sawtooth',.03);buzz([30,40,30]);setTimeout(d,2200);})}),
+  diagnose:(correct,choices,cam,say)=>({ic:'q',say,act:'diagnose',ids:[],cam,diag:{correct,choices}}),
+};
+const DIAG_COST=3000;
+const TT='테스터로 양쪽을 대 봐요. 삐— 하면 이어진 거예요.';
+
+/* dryer helpers */
+const dOpen=()=>[S.unplug(),S.sOut(['s1','s2','s3'],'home','드라이버로 앞 뚜껑 나사 세 개를 풀어요.'),S.away('cover','cover','home','앞 뚜껑을 들어서 떼어 내요.')];
+const dClose=()=>[S.back('cover','cover','home','뚜껑을 다시 덮어요.'),S.sIn(['s1','s2','s3'],'home'),S.plugin(),S.on('switch','home','손잡이 스위치를 켜 봐요!')];
+/* fan helpers */
+const fBackOpen=()=>[S.unplug(),S.sOut(['m1','m2','m3'],'fback','모터 뒤 뚜껑 나사 세 개를 풀어요.'),S.away('mcap','mcap','fback','뒤 뚜껑을 떼어 내요.')];
+const fBackClose=()=>[S.back('mcap','mcap','fback','뒤 뚜껑을 덮어요.'),S.sIn(['m1','m2','m3'],'fback'),S.plugin(),S.on('btn','home','가운데 버튼을 눌러 봐요!')];
+const fBaseOpen=()=>[S.unplug(),S.sOut(['b1','b2'],'base','받침대 뚜껑 나사 두 개를 풀어요.'),S.away('bcover','bcover','base','받침대 뚜껑을 떼어 내요.')];
+const fBaseClose=()=>[S.back('bcover','bcover','base','받침대 뚜껑을 덮어요.'),S.sIn(['b1','b2'],'base'),S.plugin(),S.on('btn','home','가운데 버튼을 눌러 봐요!')];
+const clipsOut=()=>({ic:'clip',say:'앞 망 양옆 걸쇠를 눌러서 풀어요.',act:'multi',ids:['k1','k2'],cam:'front',run1:(id,d)=>{const c=D.clips[id];tone(900,.05,'square',.04);buzz(20);tween(.3,e=>{c.rotation.y=(id==='k1'?-1:1)*1.1*e;},d);}});
+const clipsIn=()=>({ic:'clip',say:'걸쇠를 다시 채워요.',act:'multi',ids:['k1','k2'],cam:'front',run1:(id,d)=>{const c=D.clips[id];tone(900,.05,'square',.04);buzz(20);tween(.3,e=>{c.rotation.y=(id==='k1'?-1:1)*1.1*(1-e);},d);}});
+const fFrontOpen=()=>[S.unplug(),clipsOut(),S.away('fgrille','fgrille','front','앞 망을 떼어 내요.')];
+const fFrontClose=()=>[S.back('fgrille','fgrille','front','앞 망을 다시 끼워요.'),clipsIn(),S.plugin(),S.on('btn','home','가운데 버튼을 눌러 봐요!')];
+/* kettle helpers */
+const flip=(say)=>S.tap('lift','kettle','home',say||'포트를 들어서 뒤집어요. 부품은 바닥에 있어요.',d=>tweenWorld(D.K,D.flipPose.p,D.flipPose.q,1.1,d));
+const unflip=()=>S.tap('down','kettle','kbottom','포트를 다시 받침에 올려요.',d=>tweenWorld(D.K,D.Khome,new W.Quaternion(),1.1,d));
+const kOpen=()=>[S.unplug(),flip(),S.sOut(['k1','k2','k3'],'kbottom','바닥판 나사 세 개를 풀어요.'),S.away('plate','plate','kbottom','바닥판을 떼어 내요.')];
+const kClose=()=>[S.back('plate','plate','kbottom','바닥판을 덮어요.'),S.sIn(['k1','k2','k3'],'kbottom'),unflip(),S.plugin(),S.on('switch','home','스위치를 눌러 봐요!')];
+
+/* cooker helpers */
+const cOpen=()=>[S.unplug(),S.tap('lift','cooker','home','밥솥을 뒤집어요. 바닥에 부품이 있어요.',d=>tweenWorld(D.C,D.flipPose.p,D.flipPose.q,1.1,d)),
+  S.sOut(['r1','r2','r3'],'cbottom','바닥판 나사 세 개를 풀어요.'),S.away('plate','plate','cbottom','바닥판을 떼어 내요.')];
+const cClose=()=>[S.back('plate','plate','cbottom','바닥판을 덮어요.'),S.sIn(['r1','r2','r3'],'cbottom'),
+  S.tap('down','cooker','cbottom','밥솥을 바로 세워요.',d=>tweenWorld(D.C,D.Chome,new W.Quaternion(),1.1,d)),S.plugin(),S.on('btn','home','취사 버튼을 눌러 봐요!')];
+const lidOpenC=()=>S.tap('lift','lid','home','뚜껑을 열어요.',d=>tween(.7,e=>{D.lid.rotation.x=-1.6*e;},d));
+const lidCloseC=()=>S.tap('down','lid','home','뚜껑을 닫아요.',d=>tween(.7,e=>{D.lid.rotation.x=-1.6*(1-e);},d));
+/* remote helpers */
+const rOpen=()=>[S.away('bcov','bcov','home','건전지 뚜껑을 열어요.'),S.away('bat','batOut','home','분해 전엔 건전지부터 빼요.'),
+  S.sOut(['q1'],'home','안쪽 작은 나사를 풀어요.'),S.away('rtop','rtop','home','윗 껍데기를 들어 올려요.')];
+const rClose=()=>[S.back('rtop','rtop','home','윗 껍데기를 덮어요.'),S.sIn(['q1'],'home'),S.back('bat','batOut','home','건전지를 다시 넣어요.'),
+  S.back('bcov','bcov','home','뚜껑을 닫아요.'),S.on('btn','home','TV를 향해 빨간 버튼을 눌러 봐요!')];
+/* microwave helpers */
+const mOpen=()=>S.tap('lift','door','home','문을 열어요.',d=>tween(.7,e=>{D.door.rotation.y=-1.9*e;},d));
+const mClose=()=>S.tap('down','door','home','문을 닫아요.',d=>tween(.7,e=>{D.door.rotation.y=-1.9*(1-e);},d));
+const mBayOpen=(cam,say)=>[S.unplug(),S.sOut(['bk1','bk2','bk3'],cam||'inside',say||'뒤판 나사 세 개를 풀어요.'),S.away('backp','backp',cam||'inside','뒤판을 떼어 내요.')];
+const mBayClose=(cam)=>[S.back('backp','backp',cam||'inside','뒤판을 다시 덮어요.'),S.sIn(['bk1','bk2','bk3'],cam||'inside'),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')];
+/* toaster helpers */
+const tFlip=()=>S.tap('lift','toaster','home','토스터를 들어서 뒤집어요. 바닥에 부품이 있어요.',d=>tweenWorld(D.K,D.flipPose.p,D.flipPose.q,1.1,d));
+const tUnflip=()=>S.tap('down','toaster','tbottom','토스터를 다시 세워요.',d=>tweenWorld(D.K,D.Khome,new W.Quaternion(),1.1,d));
+const tOpen=()=>[S.unplug(),tFlip(),S.sOut(['t1','t2','t3'],'tbottom','바닥판 나사 세 개를 풀어요.'),S.away('plate','plate','tbottom','바닥판을 떼어 내요.')];
+const tClose=()=>[S.back('plate','plate','tbottom','바닥판을 덮어요.'),S.sIn(['t1','t2','t3'],'tbottom'),tUnflip(),S.plugin(),S.on('lever','home','레버를 눌러 봐요!')];
+/* vacuum helpers */
+const vPanelOpen=(cam,say)=>[S.unplug(),S.sOut(['v1','v2'],cam||'panelZ',say||'손잡이 쪽 나사 두 개를 풀어요.'),S.away('panel','panel',cam||'panelZ','덮개를 떼어 내요.')];
+const vPanelClose=(cam)=>[S.back('panel','panel',cam||'panelZ','덮개를 다시 덮어요.'),S.sIn(['v1','v2'],cam||'panelZ'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')];
+
+const MACH={
+  dryer:{name:'헤어드라이기',icon:'dryer',build:buildDryer,stages:[
+    {title:'바람이 안 뜨거워요',cause:'바람을 데우는 꼬불 철사가 끊어졌었어요',cfg:{heater:'broken'},box:'heater',steps:[...dOpen(),
+      S.test(['hA','hB'],false,'inside','꼬불 철사 양쪽 끝을 재요. '+TT),
+      S.look('heater','coil','inside','조용하죠? 철사를 가까이 들여다봐요.'),
+      S.trash('heater','heater','coil','끊어진 곳 발견! 철사 판을 통째로 빼요.'),
+      S.insert('heater','home','부품 상자에서 새 철사 판을 넣어요.'),
+      S.test(['hA','hB'],true,'inside','새 철사도 다시 재 봐요.'),...dClose()]},
+    {title:'아예 안 켜져요',cause:'스위치 뒤 전선이 납땜 자리에서 떨어졌었어요',cfg:{wire:'off'},steps:[...dOpen(),
+      S.test(['sIn','hB'],false,'inside','스위치 아래와 철사 끝 사이를 재요. '+TT),
+      S.look('sOut','sw','inside','어딘가 끊겼어요. 스위치 위쪽을 가까이 봐요.'),
+      {ic:'iron',say:'파란 전선이 똑 떨어졌네요. 인두로 다시 붙여요.',act:'solder',ids:['sOut'],cam:'sw',run:d=>{D.root.remove(D.blue);D.blue=tube(D.root,BLUE_OK,'#3b6fd0');if(D.tip)D.tip.visible=false;D.sOut.material.color.set('#f2f5f7');D.sOut.material.metalness=.7;D.sOut.material.roughness=.2;d();}},
+      S.test(['sIn','hB'],true,'inside','다시 재 봐요.'),...dClose()]},
+    {title:'바람이 약해요',cause:'팬에 머리카락이 칭칭 감겼었어요',cfg:{hair:true},steps:[S.unplug(),
+      S.sOut(['g1','g2'],'back','드라이기 뒤쪽 망 나사 두 개를 풀어요.'),
+      S.away('grille','grille','back','뒤 망을 떼어 내요.'),
+      S.look('fan','fanZ','back','바람개비(팬)를 가까이 봐요.'),
+      S.picks(['h1','h2','h3'],'fanZ','머리카락이 감겼네요! 하나씩 뽑아요.'),
+      S.tap('spin','fan','fanZ','손으로 돌려 봐요. 술술 돌면 성공!',d=>{tone(240,.5,'sawtooth',.02);tween(1.4,e=>{D.fan.rotation.x+=.35*(1-e);},d);}),
+      S.back('grille','grille','back','뒤 망을 다시 끼워요.'),S.sIn(['g1','g2'],'back'),S.plugin(),S.on('switch','home','스위치를 켜 봐요!')]},
+    {title:'선을 흔들면 꺼졌다 켜졌다 해요',cause:'손잡이 속 선이 자꾸 꺾여서 끊어졌었어요',cfg:{cord:true},steps:[...dOpen(),
+      S.test(['cA','sIn'],false,'inside','선 들어오는 곳과 스위치 아래를 재요. '+TT),
+      S.look('wfix','cordZ','inside','손잡이 속 선을 가까이 봐요.'),
+      S.cut('cordZ','속이 끊어져 까맣게 탔어요. 상한 부분을 잘라 내요.'),S.strip('cordZ'),S.solderW('cordZ'),
+      S.test(['cA','sIn'],true,'inside','다시 재 봐요.'),...dClose()]},
+    {title:'쓰다가 툭 꺼지고 다시 안 켜져요',cause:'너무 뜨거우면 끊어지는 안전 부품이 끊어졌었어요',cfg:{fuse:'bad'},box:'fuse',steps:[...dOpen(),
+      S.test(['tA','tB'],false,'inside','철사 위 작은 은색 통 양쪽을 재요. '+TT),
+      S.look('fuse','fuseZ','inside','너무 뜨거워지면 스스로 끊어져서 불을 막는 부품이에요.'),
+      S.trash('fuse','fuse','fuseZ','제 할 일을 하고 끊어졌어요. 빼요.'),
+      S.insert('fuse','home','새 안전 부품을 끼워요.'),
+      S.test(['tA','tB'],true,'inside','다시 재 봐요.'),...dClose()]},
+    {title:'탄 냄새만 나고 바람이 없어요',cause:'바람개비를 돌리는 모터가 타 버렸었어요',cfg:{motor:'bad'},box:'motor',steps:[...dOpen(),
+      S.diagnose('모터',['모터','열선(히터)','안전 부품(퓨즈)'],'inside','탄 냄새만 나고 바람이 없어요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('motor','motorZ','inside','모터를 가까이 봐요. 까맣게 탔네요.'),
+      S.away('fan','fanOut','motorZ','모터에 꽂힌 바람개비부터 빼요.'),
+      S.trash('motor','motor','motorZ','탄 모터를 빼요.'),
+      S.insert('motor','home','부품 상자에서 새 모터를 넣어요.'),
+      S.back('fan','fanOut','motorZ','바람개비를 다시 꽂아요.'),
+      S.test(['mA','mB'],true,'inside','다시 재 봐요.'),...dClose()]},
+  ]},
+  fan:{name:'선풍기',icon:'fan',build:buildFan,stages:[
+    {title:'웅— 소리만 나고 안 돌아요',cause:'모터 시동을 도와주는 작은 통이 부풀었었어요',cfg:{cap:'bad'},box:'cap',steps:[...fBackOpen(),
+      S.look('cap','capZ','fback','모터 옆 작은 통을 봐요. 처음 돌 때 힘을 보태 줘요.'),
+      S.trash('cap','cap','capZ','윗부분이 볼록 부풀었어요. 빼요.'),
+      S.insert('cap','fback','새 통을 끼워요.'),...fBackClose()]},
+    {title:'버튼을 눌러도 잘 안 켜져요',cause:'버튼 밑 쇠붙이에 까만 때가 꼈었어요',cfg:{dirt:true},steps:[...fBaseOpen(),
+      S.test(['c1','c2'],false,'base','가운데 버튼 밑 쇠붙이 두 개를 재요. '+TT),
+      S.scrub('dirt',6,'base','때가 껴서 전기가 안 통해요. 솔로 여러 번 문질러요.'),
+      S.test(['c1','c2'],true,'base','다시 재 봐요.'),...fBaseClose()]},
+    {title:'날개가 느릿느릿 돌아요',cause:'날개 축에 먼지와 기름때가 굳었었어요',cfg:{gunk:true},box:'oil',steps:[...fFrontOpen(),
+      S.away('blade','blade','front','날개를 빼요.'),
+      S.look('gunk','shaftZ','front','날개가 꽂히는 축을 가까이 봐요.'),
+      S.scrub('gunk',6,'shaftZ','굳은 때를 솔로 문질러 닦아요.'),
+      S.tap('drop','box','home','부품 상자에서 기름을 꺼내 한 방울!',d=>pourFromBox([0,2.0,.4],d)),
+      S.back('blade','blade','front','날개를 다시 꽂아요.'),...fFrontClose()]},
+    {title:'선을 건드리면 꺼져요',cause:'받침대 속 선이 상해서 끊어졌었어요',cfg:{cord:true},steps:[...fBaseOpen(),
+      S.test(['e1','e2'],false,'base','선 들어오는 곳과 안쪽 끝을 재요. '+TT),
+      S.look('wfix','cordZ','base','받침대 속 선을 가까이 봐요.'),
+      S.cut('cordZ','까맣게 상했어요. 상한 부분을 잘라 내요.'),S.strip('cordZ'),S.solderW('cordZ'),
+      S.test(['e1','e2'],true,'base','다시 재 봐요.'),...fBaseClose()]},
+    {title:'한참 돌다 멈추고 안 돌아요',cause:'모터가 너무 뜨거워져서 안전 부품이 끊어졌었어요',cfg:{mfuse:'bad'},box:'mfuse',steps:[...fBackOpen(),
+      S.test(['f1','f2'],false,'fback','모터에 붙은 작은 은색 통 양쪽을 재요. '+TT),
+      S.look('mfuse','mfuseZ','fback','모터가 너무 뜨거우면 끊어지는 안전 부품이에요.'),
+      S.trash('mfuse','mfuse','mfuseZ','끊어졌어요. 빼요.'),
+      S.insert('mfuse','fback','새 안전 부품을 끼워요.'),
+      S.test(['f1','f2'],true,'fback','다시 재 봐요.'),...fBackClose()]},
+    {title:'돌 때 덜덜덜 흔들려요',cause:'날개 한 장에 금이 가서 무게가 안 맞았어요',cfg:{blade:'bad'},box:'blade',steps:[...fFrontOpen(),
+      S.diagnose('날개',['날개','시동 도우미 통','안전 부품'],'front','돌 때마다 덜덜덜 흔들려요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('blade','bladeZ','front','날개를 가까이 봐요. 한 장이 깨졌네요.'),
+      S.trash('blade','blade','bladeZ','깨진 날개를 빼요.'),
+      S.insert('blade','front','새 날개를 꽂아요.'),...fFrontClose()]},
+  ]},
+  kettle:{name:'전기포트',icon:'kettle',build:buildKettle,stages:[
+    {title:'물이 하나도 안 데워져요',cause:'물 없이 끓이면 전기를 끊는 안전 부품이 망가졌었어요',cfg:{disc:'bad'},box:'disc',steps:[...kOpen(),
+      S.test(['dA','dB'],false,'kbottom','은색 동그란 부품 양쪽을 재요. '+TT),
+      S.look('disc','discZ','kbottom','물 없이 끓이면 전기를 끊어 주는 안전 부품이에요.'),
+      S.trash('disc','disc','discZ','까맣게 타서 망가졌어요. 빼요.'),
+      S.insert('disc','kbottom','새 안전 부품을 끼워요.'),
+      S.test(['dA','dB'],true,'kbottom','다시 재 봐요.'),...kClose()]},
+    {title:'타는 냄새가 나더니 안 켜져요',cause:'바닥 속 전선 한 군데가 타 버렸었어요',cfg:{wire:true},steps:[...kOpen(),
+      S.look('wfix','wireZ','kbottom','노란 전선의 까만 부분을 가까이 봐요.'),
+      S.cut('wireZ','탄 부분은 위험해요. 잘라 내요.'),S.strip('wireZ'),S.solderW('wireZ'),...kClose()]},
+    {title:'받침에 올려도 반응이 없어요',cause:'받침 가운데 꽂는 곳에 녹이 슬었었어요',cfg:{rust:true},steps:[S.unplug(),
+      S.tap('lift','kettle','home','포트를 받침에서 내려요.',d=>tweenWorld(D.K,D.liftPose.p,D.liftPose.q,1,d)),
+      S.look('rust','pinZ','home','받침 가운데 꽂는 곳을 봐요. 녹이 슬었네요.'),
+      S.scrub('rust',6,'pinZ','녹을 솔로 문질러 닦아요.'),
+      S.tap('down','kettle','home','포트를 다시 받침에 올려요.',d=>tweenWorld(D.K,D.Khome,new W.Quaternion(),1,d)),
+      S.plugin(),S.on('switch','home','스위치를 눌러 봐요!')]},
+    {title:'스위치가 딸깍 걸리지 않아요',cause:'스위치 속 걸리는 고리가 부러졌었어요',cfg:{swmod:'bad'},box:'swmod',steps:[...kOpen(),
+      S.test(['wA','wB'],false,'kbottom','스위치 부품 양쪽을 재요. '+TT),
+      S.look('swmod','swZ','kbottom','스위치 부품을 가까이 봐요. 고리가 부러졌어요.'),
+      S.trash('swmod','swmod','swZ','부러진 스위치 부품을 빼요.'),
+      S.insert('swmod','kbottom','새 스위치 부품을 끼워요.'),
+      S.test(['wA','wB'],true,'kbottom','다시 재 봐요.'),...kClose()]},
+    {title:'오래 걸리고 하얀 가루가 떠요',cause:'바닥에 하얀 물때가 두껍게 꼈었어요',cfg:{scale:true},box:'vinegar',steps:[S.unplug(),
+      S.tap('lift','lid','home','뚜껑을 열어요.',d=>tween(.6,e=>{D.lid.rotation.z=1.9*e;},d)),
+      S.diagnose('물때',['물때','녹','스위치 부품'],'scaleZ','오래 걸리고 하얀 가루가 떠요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('scale','scaleZ','home','안쪽 바닥을 봐요. 하얀 물때가 잔뜩!'),
+      S.tap('drop','box','home','부품 상자에서 식초를 꺼내 부어요. 물때가 녹아요.',d=>pourFromBox([0,1.9,0],d)),
+      S.scrub('scale',6,'scaleZ','녹은 물때를 문질러 닦아요.'),
+      S.tap('down','lid','home','뚜껑을 닫아요.',d=>tween(.6,e=>{D.lid.rotation.z=1.9*(1-e);},d)),
+      S.plugin(),S.on('switch','home','스위치를 눌러 봐요!')]},
+  ]},
+  cooker:{name:'전기밥솥',icon:'rice',build:buildCooker,stages:[
+    {title:'전원이 아예 안 들어와요',cause:'너무 뜨거우면 끊어지는 안전 부품이 끊어졌었어요',cfg:{rfuse:'bad'},box:'rfuse',steps:[...cOpen(),
+      S.test(['rA','rB'],false,'cbottom','바닥 속 작은 은색 통 양쪽을 재요. '+TT),
+      S.look('rfuse','rfuseZ','cbottom','너무 뜨거워지면 스스로 끊어져서 불을 막는 부품이에요.'),
+      S.trash('rfuse','rfuse','rfuseZ','끊어졌어요. 빼요.'),
+      S.insert('rfuse','cbottom','새 안전 부품을 끼워요.'),
+      S.test(['rA','rB'],true,'cbottom','다시 재 봐요.'),...cClose()]},
+    {title:'김이 옆으로 새고 밥이 설익어요',cause:'뚜껑 안쪽 고무 패킹이 낡아 갈라졌었어요',cfg:{gasket:'bad'},box:'gasket',steps:[S.unplug(),
+      lidOpenC(),
+      S.look('gasket','gasketZ','home','뚜껑 안쪽 둥근 고무를 봐요. 김이 새지 않게 막아 줘요.'),
+      S.trash('gasket','gasket','gasketZ','딱딱해지고 갈라졌어요. 빼요.'),
+      S.insert('gasket','home','새 고무 패킹을 끼워요.'),
+      lidCloseC(),S.plugin(),S.on('btn','home','취사 버튼을 눌러 봐요!')]},
+    {title:'밥이 바닥에 새까맣게 타요',cause:'바닥 온도 감지 부품에 탄 밥알이 눌어붙었었어요',cfg:{crust:true},steps:[S.unplug(),
+      lidOpenC(),
+      S.away('pot','pot','home','안쪽 솥을 꺼내요.'),
+      S.look('crust','sensorZ','home','바닥 가운데 동그란 부품이 온도를 재요. 탄 밥알이 붙었네요.'),
+      S.scrub('crust',6,'sensorZ','온도를 잘못 재서 밥이 타요. 문질러 닦아요.'),
+      S.back('pot','pot','home','솥을 다시 넣어요.'),
+      lidCloseC(),S.plugin(),S.on('btn','home','취사 버튼을 눌러 봐요!')]},
+    {title:'버튼을 눌러도 반응이 없어요',cause:'버튼 뒤 쇠붙이에 때가 껴서 전기가 안 통했어요',cfg:{pdirt:true},steps:[S.unplug(),
+      S.sOut(['p1','p2'],'panelZ','앞 버튼판 나사 두 개를 풀어요.'),
+      S.away('panel','panel','panelZ','버튼판을 떼어 내요.'),
+      S.test(['bA','bB'],false,'panelZ','버튼 뒤 쇠붙이 두 개를 재요. '+TT),
+      S.scrub('pdirt',6,'panelZ','까만 때를 솔로 문질러요.'),
+      S.test(['bA','bB'],true,'panelZ','다시 재 봐요.'),
+      S.back('panel','panel','panelZ','버튼판을 다시 붙여요.'),S.sIn(['p1','p2'],'panelZ'),S.plugin(),S.on('btn','home','취사 버튼을 눌러 봐요!')]},
+    {title:'선을 꽂아도 됐다 안 됐다 해요',cause:'전원선 꽂는 곳의 납땜에 금이 갔었어요',cfg:{joint:true},steps:[...cOpen(),
+      S.diagnose('납땜 자리',['납땜 자리','고무 패킹','온도 감지 부품'],'cbottom','선을 꽂아도 됐다 안 됐다 해요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('pj','pjZ','cbottom','동그란 납땜 자리를 봐요. 회색으로 탁하고 금이 갔어요.'),
+      {ic:'iron',say:'인두로 납을 다시 녹여서 붙여요.',act:'solder',ids:['pj'],cam:'pjZ',run:d=>{const m=D.pj.material;m.color.set('#f2f5f7');m.metalness=.7;m.roughness=.2;if(D.pjCrack)D.pjCrack.visible=false;d();}},
+      S.test(['pA','pB'],true,'cbottom','다시 재 봐요.'),...cClose()]},
+  ]},
+  remote:{name:'리모컨',icon:'remote',build:buildRemote,stages:[
+    {title:'버튼을 눌러도 아무 반응이 없어요',cause:'건전지가 새서 단자에 녹이 슬었었어요',cfg:{bat:'bad',rust:true},box:'bat',steps:[
+      S.away('bcov','bcov','home','건전지 뚜껑을 열어요.'),
+      S.look('bat','batZ','home','건전지 끝에 하얀 가루가 새어 나왔어요.'),
+      S.trash('bat','bat','batZ','샌 건전지는 빼서 버려요.'),
+      S.scrub('rust',6,'batZ','단자에 낀 녹을 솔로 닦아요.'),
+      S.insert('bat','home','새 건전지를 넣어요.'),
+      S.back('bcov','bcov','home','뚜껑을 닫아요.'),S.on('btn','home','TV를 향해 빨간 버튼을 눌러 봐요!')]},
+    {title:'몇몇 버튼만 안 눌려요',cause:'버튼 밑 까만 점에 때가 껴서 닿아도 전기가 안 통했어요',cfg:{pads:true},steps:[...rOpen(),
+      S.look('pads','padZ','home','버튼 밑 까만 점들을 봐요. 때가 꼈네요.'),
+      S.scrub('pads',6,'padZ','알코올 솜으로 문질러 닦아요.'),...rClose()]},
+    {title:'떨어뜨린 뒤로 불빛이 안 나가요',cause:'앞 전구(신호 보내는 전구) 다리 납땜이 떨어졌었어요',cfg:{ir:true},steps:[
+      S.tap('phone','phone','home','휴대폰 카메라로 앞 전구를 비춰 봐요. 보라 불빛이 보여야 해요.',irCheck),
+      ...rOpen(),
+      S.look('ij','irZ','home','안 보이죠? 앞 전구 다리를 봐요. 납땜이 떨어졌어요.'),
+      {ic:'iron',say:'인두로 전구 다리를 다시 붙여요.',act:'solder',ids:['ij'],cam:'irZ',run:d=>{D.ij.forEach(j=>{j.material.color.set('#f2f5f7');j.material.metalness=.7;j.material.roughness=.2;});D.irLed.rotation.z=0;D.irOK=true;d();}},
+      ...rClose()]},
+    {title:'음료를 쏟은 뒤로 끈적하고 안 돼요',cause:'안쪽에 음료가 말라붙어 버튼을 막았었어요',cfg:{spill:true},steps:[...rOpen(),
+      S.look('spill','spillZ','home','안쪽에 음료가 말라붙었어요.'),
+      S.scrub('spill',7,'spillZ','물수건으로 꼼꼼히 닦아요.'),...rClose()]},
+    {title:'떨어뜨렸더니 TV가 반응을 안 해요',cause:'신호 박자를 맞추는 작은 부품이 깨졌었어요',cfg:{xtal:'bad'},box:'xtal',steps:[...rOpen(),
+      S.diagnose('신호 부품',['신호 부품','건전지','버튼 접점'],'home','떨어뜨렸더니 TV가 반응을 안 해요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('xtal','xtalZ','home','주황색 작은 부품을 봐요. 신호 박자를 맞춰 줘요. 깨졌네요.'),
+      S.trash('xtal','xtal','xtalZ','깨진 부품을 빼요.'),
+      S.insert('xtal','home','새 부품을 끼워요.'),...rClose()]},
+  ]},
+  microwave:{name:'전자레인지',icon:'microwave',build:buildMicrowave,stages:[
+    {title:'문을 닫아도 안 켜져요',cause:'문이 닫힌 걸 알려주는 안전 스위치가 망가졌었어요',cfg:{sw:'bad'},box:'mwsw',steps:[...mBayOpen('swZ','뒤판 나사 세 개를 풀어요.'),
+      S.test(['swA','swB'],false,'swZ','문 안전 스위치 양쪽을 재요. '+TT),
+      S.look('mwsw','swZ','swZ','문을 닫으면 눌리는 스위치예요. 고리가 휘었어요.'),
+      S.trash('mwsw','mwsw','swZ','망가진 스위치를 빼요.'),
+      S.insert('mwsw','inside','새 스위치를 끼워요.'),
+      S.test(['swA','swB'],true,'swZ','다시 재 봐요.'),...mBayClose('swZ')]},
+    {title:'아예 먹통이에요, 불도 안 들어와요',cause:'전기를 지켜 주는 메인 퓨즈가 끊어졌었어요',cfg:{fuse:'bad'},box:'mwfuse',steps:[...mBayOpen('fuseZ','뒤판 나사 세 개를 풀어요.'),
+      S.test(['fsA','fsB'],false,'fuseZ','은색 통 양쪽을 재요. '+TT),
+      S.look('mwfuse','fuseZ','fuseZ','너무 센 전기가 흐르면 스스로 끊어지는 안전 부품이에요.'),
+      S.trash('mwfuse','mwfuse','fuseZ','끊어졌어요. 빼요.'),
+      S.insert('mwfuse','inside','새 안전 부품을 끼워요.'),
+      S.test(['fsA','fsB'],true,'fuseZ','다시 재 봐요.'),...mBayClose('fuseZ')]},
+    {title:'돌아가긴 하는데 음식이 안 뜨거워요',cause:'마이크로파를 만드는 가열 부품이 고장 났었어요',cfg:{mag:'bad'},box:'mag',steps:[...mBayOpen('magZ','뒤판 나사 세 개를 풀어요.'),
+      S.test(['mgA','mgB'],false,'magZ','가열 부품 양쪽 단자를 재요. '+TT),
+      S.look('mag','magZ','magZ','음식을 데우는 열을 만드는 부품이에요. 까맣게 탔어요.'),
+      S.trash('mag','mag','magZ','탄 부품을 빼요.'),
+      S.insert('mag','inside','새 부품을 끼워요.'),
+      S.test(['mgA','mgB'],true,'magZ','다시 재 봐요.'),...mBayClose('magZ')]},
+    {title:'접시가 안 돌아요',cause:'회전판 바퀴에 음식 찌꺼기와 기름때가 굳어 있었어요',cfg:{dirty:true},steps:[S.unplug(),mOpen(),
+      S.away('tray','tray','trayZ','회전판을 들어내요.'),
+      S.look('gunk2','trayZ','trayZ','바퀴가 구르는 테두리를 가까이 봐요. 찌꺼기가 굳었네요.'),
+      S.scrub('gunk2',6,'trayZ','굳은 때를 솔로 문질러요.'),
+      S.back('tray','tray','trayZ','회전판을 다시 올려요.'),mClose(),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')]},
+    {title:'버튼이 가끔 안 눌려요',cause:'조작판 버튼 뒤 접점에 때가 껴서 전기가 안 통했어요',cfg:{pdirt:true},steps:[S.unplug(),
+      S.sOut(['p1','p2'],'panelZ','조작판 나사 두 개를 풀어요.'),
+      S.away('panel','panel','panelZ','조작판을 떼어 내요.'),
+      S.diagnose('버튼 접점',['버튼 접점','문 안전 스위치','메인 퓨즈'],'panelZ','버튼이 가끔 안 눌려요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.test(['bA','bB'],false,'panelZ','버튼 뒤 접점 두 개를 재요. '+TT),
+      S.scrub('pdirt',6,'panelZ','까만 때를 솔로 문질러요.'),
+      S.test(['bA','bB'],true,'panelZ','다시 재 봐요.'),
+      S.back('panel','panel','panelZ','조작판을 다시 붙여요.'),S.sIn(['p1','p2'],'panelZ'),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')]},
+  ]},
+  toaster:{name:'토스터',icon:'toaster',build:buildToaster,stages:[
+    {title:'아예 안 켜져요',cause:'너무 뜨거우면 끊어지는 안전 부품이 끊어졌었어요',cfg:{fuse:'bad'},box:'tfuse',steps:[...tOpen(),
+      S.test(['tfA','tfB'],false,'tbottom','은색 통 양쪽을 재요. '+TT),
+      S.look('tfuse','fuseZ','tbottom','너무 뜨거워지면 스스로 끊어져서 불을 막는 부품이에요.'),
+      S.trash('tfuse','tfuse','fuseZ','끊어졌어요. 빼요.'),
+      S.insert('tfuse','tbottom','새 안전 부품을 끼워요.'),
+      S.test(['tfA','tfB'],true,'tbottom','다시 재 봐요.'),...tClose()]},
+    {title:'레버를 눌러도 안 걸려요',cause:'레버를 고정하는 걸쇠가 부러졌었어요',cfg:{latch:'bad'},box:'latch',steps:[...tOpen(),
+      S.look('latch','latchZ','tbottom','레버를 걸어 고정하는 부품을 봐요. 걸쇠가 부러졌어요.'),
+      S.trash('latch','latch','latchZ','부러진 걸쇠를 빼요.'),
+      S.insert('latch','tbottom','새 걸쇠를 끼워요.'),...tClose()]},
+    {title:'탄 냄새만 나고 안 구워져요',cause:'열선 뭉치가 타 버렸었어요',cfg:{heater:'bad'},box:'theater',steps:[...tOpen(),
+      S.test(['hA','hB'],false,'tbottom','열선 양쪽 단자를 재요. '+TT),
+      S.look('heater','heaterZ','tbottom','열선을 가까이 봐요. 까맣게 탔네요.'),
+      S.trash('heater','theater','heaterZ','탄 열선을 빼요.'),
+      S.insert('theater','tbottom','새 열선을 넣어요.'),
+      S.test(['hA','hB'],true,'tbottom','다시 재 봐요.'),...tClose()]},
+    {title:'구워진 뒤에도 안 튀어나와요',cause:'타이머 톱니에 빵 부스러기 가루가 꼈었어요',cfg:{gunk:true},steps:[...tOpen(),
+      S.look('gunk','gunkZ','tbottom','톱니가 맞물리는 곳을 봐요. 가루가 꼈네요.'),
+      S.scrub('gunk',6,'gunkZ','가루를 솔로 문질러 닦아요.'),...tClose()]},
+    {title:'다이얼을 돌려도 반응이 없어요',cause:'타이머 속 접점에 때가 껴서 전기가 안 통했어요',cfg:{tdirt:true},steps:[...tOpen(),
+      S.diagnose('타이머 접점',['타이머 접점','열선 뭉치','걸쇠'],'tbottom','다이얼을 돌려도 반응이 없어요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.test(['tdA','tdB'],false,'tdZ','타이머 속 접점 두 개를 재요. '+TT),
+      S.scrub('tdirt',6,'tdZ','까만 때를 솔로 문질러요.'),
+      S.test(['tdA','tdB'],true,'tdZ','다시 재 봐요.'),...tClose()]},
+  ]},
+  vacuum:{name:'진공청소기',icon:'vacuum',build:buildVacuum,stages:[
+    {title:'전원이 아예 안 들어와요',cause:'전원 코드 한 군데가 타 버렸었어요',cfg:{cord:true},steps:[S.unplug(),
+      S.look('wfix','cordZ','home','전원 코드의 까만 부분을 가까이 봐요.'),
+      S.cut('cordZ','탄 부분은 위험해요. 잘라 내요.'),S.strip('cordZ'),S.solderW('cordZ'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
+    {title:'흡입력이 약해요',cause:'먼지통 필터가 꽉 막혀 있었어요',cfg:{filterdirt:true},steps:[S.unplug(),
+      S.away('door','door','doorZ','먼지통 뚜껑을 열어요.'),
+      S.look('filterdirt','doorZ','필터를 가까이 봐요. 먼지가 꽉 찼어요.'),
+      S.scrub('filterdirt',6,'doorZ','먼지를 솔로 털어 내요.'),
+      S.back('door','door','doorZ','뚜껑을 닫아요.'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
+    {title:'쓰다가 뜨거워지며 뚝 꺼져요',cause:'모터 과열 안전 부품이 끊어졌었어요',cfg:{fuse:'bad'},box:'vfuse',steps:[...vPanelOpen(),
+      S.test(['vfA','vfB'],false,'fuseZ','은색 통 양쪽을 재요. '+TT),
+      S.look('vfuse','fuseZ','fuseZ','너무 뜨거워지면 스스로 끊어져서 불을 막는 부품이에요.'),
+      S.trash('vfuse','vfuse','fuseZ','끊어졌어요. 빼요.'),
+      S.insert('vfuse','panelZ','새 안전 부품을 끼워요.'),
+      S.test(['vfA','vfB'],true,'fuseZ','다시 재 봐요.'),...vPanelClose()]},
+    {title:'소리만 크고 전혀 안 빨려요',cause:'호스 속이 먼지·이물질로 꽉 막혀 있었어요',cfg:{clog:true},steps:[S.unplug(),
+      S.away('hoseEnd','hoseEnd','clogZ','호스 끝을 빼요.'),
+      S.look('h1','clogZ','clogZ','호스 속을 들여다봐요. 뭔가 꽉 막혔어요.'),
+      S.picks(['h1','h2'],'clogZ','막힌 덩어리를 하나씩 뽑아내요.'),
+      S.back('hoseEnd','hoseEnd','clogZ','호스 끝을 다시 꽂아요.'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
+    {title:'버튼을 눌러도 아무 반응이 없어요',cause:'전원 스위치 접점에 때가 껴서 전기가 안 통했어요',cfg:{swdirt:true},steps:[...vPanelOpen(),
+      S.diagnose('스위치 접점',['스위치 접점','전원 코드','모터 안전 부품'],'panelZ','버튼을 눌러도 아무 반응이 없어요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.test(['swA','swB'],false,'panelZ','스위치 접점 두 개를 재요. '+TT),
+      S.scrub('swdirt',6,'panelZ','까만 때를 솔로 문질러요.'),
+      S.test(['swA','swB'],true,'panelZ','다시 재 봐요.'),...vPanelClose()]},
+  ]},
+};
+const MKEYS=Object.keys(MACH);
+
+/* ================= game ================= */
+const G={mk:null,n:0,steps:null,i:0,pend:null,probes:[],scrub:0,busy:true,on:false,diagWrong:0,diagHint:false,diagGrade:null};
+function fillBox(kind){
+  while(boxContent.children.length)boxContent.remove(boxContent.children[0]);
+  boxContent.visible=!!kind;if(!kind)return;
+  let o;
+  if(kind==='oil')o=bottle('#e8c34a');
+  else if(kind==='vinegar')o=bottle('#e8f0f2');
+  else{const keep=Object.assign({},anchors);o=D.slots[kind].make('new');anchors=keep;
+    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8,mwsw:1.3,mwfuse:1.3,mag:.8,tfuse:1.3,latch:1.2,theater:.9,vfuse:1.3}[kind]||1;o.scale.setScalar(sc);}
+  o.traverse(m=>{if(m.isMesh){m.userData.id='box';pick.push(m);}});
+  boxContent.add(o);
+}
+function startStage(mk,n){
+  if(D){scene.remove(D.root);}
+  pick=ENV_PICK.slice();anchors=Object.assign({},ENV_ANCH);
+  G.mk=mk;G.n=n;const st=MACH[mk].stages[n];
+  MACH[mk].build(st.cfg);
+  fillBox(st.box);
+  plug.position.copy(PLUG_IN.p);plug.quaternion.copy(PLUG_IN.q);
+  G.steps=st.steps;G.i=0;G.on=false;G.busy=false;G.diagGrade=null;tweens.length=0;
+  parts.forEach(p=>{p.life=0;p.m.visible=false;});
+  $('#note').innerHTML=`<span>${svg(MACH[mk].icon)}</span><p></p>`;$('#note p').textContent='“'+st.title+'”';
+  $('#menu').hidden=true;$('#win').hidden=true;
+  camKey=null;const c=D.cams.home;camera.position.set(...c[0]);controls.target.set(...c[1]);camKey='home';
+  setupStep();
+}
+function setupStep(){
+  const st=G.steps[G.i];G.probes=[];G.scrub=0;probeR.visible=probeB.visible=false;
+  G.pend=st.act==='multi'?new Set(st.ids):null;tester.visible=st.act==='tester';
+  renderHud();
+  if(st.cam&&st.cam!==camKey){G.busy=true;camTo(st.cam,()=>{G.busy=false;if(st.act==='diagnose')openDiag(st.diag);});}
+  else if(st.act==='diagnose')openDiag(st.diag);
+}
+let curDiag=null;
+function openDiag(diag){
+  curDiag=diag;G.diagWrong=0;G.diagHint=false;
+  const opts=diag.choices.slice().sort(()=>Math.random()-.5);
+  $('#diagOpts').innerHTML=opts.map(c=>`<button class="opt" type="button" data-c="${c}">${c}</button>`).join('');
+  $('#diagOpts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>diagPick(b.dataset.c,b));
+  updateHintBtn();
+  $('#diag').hidden=false;
+}
+function updateHintBtn(){
+  const b=$('#diagHintBtn');
+  b.innerHTML=`<span>${svg('q')}</span>힌트 보기 (${DIAG_COST.toLocaleString('ko-KR')}원)`;
+  b.disabled=G.diagHint||P.money<DIAG_COST;
+  b.onclick=diagHint;
+}
+function diagHint(){
+  if(G.diagHint||P.money<DIAG_COST)return;
+  P.money-=DIAG_COST;save();showMoney();G.diagHint=true;tone(900,.15);buzz(40);
+  $('#diagOpts').querySelectorAll('.opt').forEach(b=>{if(b.dataset.c===curDiag.correct)b.classList.add('hint');});
+  updateHintBtn();
+}
+function diagPick(c,btn){
+  if(G.busy)return;
+  if(c===curDiag.correct){
+    const tries=G.diagWrong+1;G.diagGrade=G.diagHint?'B':(tries===1?'S':tries===2?'A':'B');
+    tone(1200,.15);buzz(30);$('#diag').hidden=true;G.busy=false;next();
+  }else{
+    G.diagWrong++;btn.classList.add('wrong');btn.disabled=true;tone(150,.2,'square',.04);buzz(80);nudge();
+  }
+}
+function activeIds(){
+  if(G.busy||!G.steps||!G.steps[G.i])return[];
+  const st=G.steps[G.i];
+  if(st.act==='multi')return[...G.pend];
+  if(st.act==='tester')return[st.ids[G.probes.length]];
+  return st.ids;
+}
+function renderHud(){
+  $('#strip').innerHTML=G.steps.map((s,k)=>`<div class="st ${k<G.i?'done':k===G.i?'now':''}">${svg(k<G.i?'check':s.ic,k<G.i?3:2)}</div>`).join('');
+  const strip=$('#strip'),now=strip.children[G.i];if(now)strip.scrollLeft=now.offsetLeft-strip.offsetLeft-strip.clientWidth/2+now.clientWidth/2;
+  const st=G.steps[G.i];
+  $('#bubIco').innerHTML=svg(st?st.ic:'check',st?2:3);$('#bubTxt').textContent=st?st.say:'다 고쳤어요!';
+  const b=$('#bub');b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+}
+function nudge(){const m=$('#mentor');m.classList.remove('shake');void m.offsetWidth;m.classList.add('shake');tone(160,.18,'square',.04);}
+function next(){G.i++;if(G.i>=G.steps.length){finish();return;}tone(660,.06);setupStep();}
+function handle(id){
+  if(G.busy)return;const act=activeIds();
+  if(!id||!act.includes(id)){nudge();return;}
+  const st=G.steps[G.i];
+  if(st.act==='tap'){G.busy=true;tone(560,.05);st.run(()=>{G.busy=false;next();});}
+  else if(st.act==='multi'){G.busy=true;G.pend.delete(id);st.run1(id,()=>{G.busy=false;if(!G.pend.size)next();});}
+  else if(st.act==='tester'){
+    const a=anchors[id].getWorldPosition(V(0,0,0)),pr=G.probes.length?probeB:probeR;
+    pr.position.copy(a).add(V(0,.16,0));pr.rotation.set(PI,0,0);pr.visible=true;G.probes.push(id);tone(800,.04);
+    if(G.probes.length===2){G.busy=true;setTimeout(()=>{
+      const bp=$('#beep');bp.hidden=false;bp.className='beep '+(st.beep?'yes':'no');bp.innerHTML=svg(st.beep?'beep':'mute',2.4);
+      if(st.beep)tone(2600,.7,'square',.05);else tone(120,.15,'sine',.03);
+      setTimeout(()=>{bp.hidden=true;G.busy=false;next();},1500);},350);}
+  }
+  else if(st.act==='scrub'){
+    G.scrub++;const m=D.dirt[id];tone(300+G.scrub*70,.06,'triangle',.04);buzz(20);
+    m.material.opacity=m.userData.op0*(1-G.scrub/st.n);
+    if(G.scrub>=st.n){m.visible=false;next();}
+  }
+  else if(st.act==='solder'){G.busy=true;solder(()=>{st.run(()=>{G.busy=false;next();});});}
+}
+function finish(){
+  G.busy=true;renderHud();
+  const st=MACH[G.mk].stages[G.n],key=G.mk+'-'+G.n,first=!P.done.includes(key);
+  const fee=12000+G.n*1500,pay=first?fee:Math.round(fee/2);
+  P.money+=pay;if(first)P.done.push(key);save();showMoney();
+  tone(880,.15);setTimeout(()=>tone(1320,.25),160);buzz([40,60,40]);
+  setTimeout(()=>{
+    $('#winCause').textContent=st.cause;$('#winPay').textContent='+'+pay.toLocaleString('ko-KR');
+    if(G.diagGrade){$('#winGrade').hidden=false;$('#winGrade').textContent='진단 등급 '+G.diagGrade;}else{$('#winGrade').hidden=true;}
+    $('#winNext').hidden=G.n>=MACH[G.mk].stages.length-1;$('#win').hidden=false;
+  },700);
+}
+
+/* ================= menus ================= */
+function doneCount(k){return MACH[k].stages.filter((_,i)=>P.done.includes(k+'-'+i)).length;}
+function isUnlocked(k){const i=MKEYS.indexOf(k);return i<=0||doneCount(MKEYS[i-1])>=2;}
+function menuMachines(){
+  G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;
+  let h='<div class="cards">';
+  MKEYS.forEach(k=>{
+    const m=MACH[k],n=m.stages.length,d=doneCount(k);
+    h+=isUnlocked(k)
+      ?`<button class="card" type="button" data-m="${k}"><span class="big">${svg(m.icon,1.5)}</span><b>${m.name}</b><small>${d} / ${n}</small><span class="bar"><i style="width:${d/n*100}%"></i></span></button>`
+      :`<button class="card locked" type="button" disabled><span class="big">${svg('q',1.5)}</span><b>?</b><small>2단계 깨면 열려요</small></button>`;
+  });
+  const owned=ownedParts();
+  h+=owned.length
+    ?`<button class="card" type="button" id="buildCard"><span class="big">${svg('box',1.5)}</span><b>나만의 기기</b><small>부품 ${owned.length}개</small></button>`
+    :`<button class="card locked" type="button" disabled><span class="big">${svg('box',1.5)}</span><b>나만의 기기</b><small>부품을 먼저 모아요</small></button>`;
+  $('#menuIn').innerHTML=h+'</div>';
+  $('#menuIn').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>menuStages(b.dataset.m));
+  const bc=$('#buildCard');if(bc)bc.onclick=menuBuild;
+}
+function menuStages(mk){
+  G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;const m=MACH[mk];
+  let h=`<div class="mhead"><button class="iconbtn" type="button" id="mBack" aria-label="물건 고르기">${svg('back')}</button><span class="ic">${svg(m.icon)}</span><h2>${m.name}</h2></div><div class="cards">`;
+  m.stages.forEach((s,i)=>{const done=P.done.includes(mk+'-'+i);
+    h+=`<button class="card stage-card" type="button" data-n="${i}"><span class="num">${i+1}</span>${done?`<span class="ok">${svg('check',3)}</span>`:''}<b></b></button>`;});
+  $('#menuIn').innerHTML=h+'</div>';
+  $('#menuIn').querySelectorAll('[data-n]').forEach(b=>{b.querySelector('b').textContent='“'+m.stages[+b.dataset.n].title+'”';b.onclick=()=>startStage(mk,+b.dataset.n);});
+  $('#mBack').onclick=menuMachines;
+}
+
+/* ================= build-your-own ================= */
+const PART_LABEL={heater:'열선',fuse:'안전 퓨즈',motor:'모터',cap:'시동 도우미 통',mfuse:'안전 퓨즈',blade:'날개',
+  disc:'안전 부품',swmod:'스위치 부품',rfuse:'안전 퓨즈',gasket:'고무 패킹',bat:'건전지',xtal:'신호 부품',
+  mwsw:'문 안전 스위치',mwfuse:'메인 퓨즈',mag:'가열 부품',tfuse:'안전 퓨즈',latch:'걸쇠',theater:'열선',vfuse:'안전 퓨즈'};
+const BUILD_COST=5000,BUILD_ADJ=['반짝이는','덜컹거리는','조용한','수상한','똑똑한','말 안 듣는','귀여운','든든한'],BUILD_NOUN=['기계','발명품','친구','상자','녀석'];
+const randOf=arr=>arr[Math.floor(Math.random()*arr.length)];
+function ownedParts(){
+  const out=[];
+  MKEYS.forEach(mk=>{MACH[mk].stages.forEach((s,i)=>{if(s.box&&PART_LABEL[s.box]&&P.done.includes(mk+'-'+i))out.push({box:s.box,label:PART_LABEL[s.box],icon:MACH[mk].icon});});});
+  return out;
+}
+let buildSel=new Set();
+function menuBuild(){
+  G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;
+  buildSel=new Set();
+  const owned=ownedParts();
+  let h=`<div class="mhead"><button class="iconbtn" type="button" id="mBack" aria-label="물건 고르기">${svg('back')}</button><span class="ic">${svg('box')}</span><h2>나만의 기기</h2></div><div class="cards">`;
+  owned.forEach((p,i)=>{h+=`<button class="card" type="button" data-i="${i}"><span class="big">${svg(p.icon,1.5)}</span><b>${p.label}</b></button>`;});
+  $('#menuIn').innerHTML=h+`</div><button class="hintbtn" id="buildGoBtn" type="button"></button>`;
+  const refresh=()=>{const b=$('#buildGoBtn');b.innerHTML=`<span>${svg('box')}</span>만들기 (${BUILD_COST.toLocaleString('ko-KR')}원)`;b.disabled=buildSel.size<2||P.money<BUILD_COST;};
+  $('#menuIn').querySelectorAll('[data-i]').forEach(c=>c.onclick=()=>{
+    const i=+c.dataset.i;
+    if(buildSel.has(i)){buildSel.delete(i);c.classList.remove('sel');}
+    else if(buildSel.size<3){buildSel.add(i);c.classList.add('sel');}
+    refresh();
+  });
+  $('#buildGoBtn').onclick=()=>{
+    if(buildSel.size<2||P.money<BUILD_COST)return;
+    P.money-=BUILD_COST;save();showMoney();tone(900,.2);buzz(40);
+    showBuildResult([...buildSel].map(i=>owned[i]));
+  };
+  refresh();
+  $('#mBack').onclick=menuMachines;
+}
+function showBuildResult(parts){
+  const name=randOf(BUILD_ADJ)+' '+parts.map(p=>p.label).join('·')+' '+randOf(BUILD_NOUN);
+  let h=`<div class="mhead"><span class="ic">${svg('box')}</span><h2>완성!</h2></div><div class="win" style="padding:0">`;
+  h+=`<div class="bigok">${svg('check',3)}</div><div class="cause">${name}</div><div class="row">`;
+  parts.forEach(p=>h+=`<span class="bigbtn" aria-hidden="true">${svg(p.icon,1.5)}</span>`);
+  h+=`</div><div class="row"><button class="bigbtn go" id="buildAgain" type="button" aria-label="또 만들기">${svg('box',1.5)}</button><button class="bigbtn" id="buildBack" type="button" aria-label="뒤로">${svg('back')}</button></div></div>`;
+  $('#menuIn').innerHTML=h;
+  tone(1200,.15);setTimeout(()=>tone(1500,.2),140);
+  $('#buildAgain').onclick=menuBuild;
+  $('#buildBack').onclick=menuMachines;
+}
+$('#homeBtn').onclick=menuMachines;
+$('#winHome').onclick=()=>menuStages(G.mk);
+$('#winNext').onclick=()=>startStage(G.mk,G.n+1);
+
+/* ================= solder ================= */
+const SD={on:false,hold:false,heat:0,z0:42,z1:78,cb:null,last:0,lock:false};
+$('#sdTool').innerHTML=svg('iron',1.6);
+function solder(cb){Object.assign(SD,{on:true,hold:false,heat:0,cb,lock:false});
+  $('#sdZone').style.left=SD.z0+'%';$('#sdZone').style.width=(SD.z1-SD.z0)+'%';$('#sdRes').hidden=true;
+  $('#solder').hidden=false;SD.last=performance.now();requestAnimationFrame(sdTick);}
+function sdTick(t){if(!SD.on)return;const dt=t-SD.last;SD.last=t;
+  if(SD.hold){SD.heat=Math.min(100,SD.heat+dt/26);if(SD.heat>=100)sdRelease();}
+  $('#sdFill').style.width=SD.heat+'%';$('#sdHold').classList.toggle('active',SD.hold);requestAnimationFrame(sdTick);}
+function sdPress(){if(SD.on&&!SD.lock){SD.hold=true;$('#sdRes').hidden=true;}}
+function sdRelease(){
+  if(!SD.on||!SD.hold)return;SD.hold=false;const h=SD.heat,r=$('#sdRes');r.hidden=false;
+  if(h>=SD.z0&&h<=SD.z1){r.className='sres ok';r.innerHTML=svg('check',3);SD.lock=true;tone(1200,.1);buzz(60);
+    setTimeout(()=>{SD.on=false;$('#solder').hidden=true;const c=SD.cb;SD.cb=null;c&&c();},700);}
+  else{r.className='sres bad';r.innerHTML=svg('no',3);tone(150,.2,'square',.04);buzz(30);SD.heat=0;}
+}
+const hb=$('#sdHold');
+hb.addEventListener('pointerdown',e=>{e.preventDefault();hb.setPointerCapture&&hb.setPointerCapture(e.pointerId);sdPress();});
+hb.addEventListener('pointerup',sdRelease);hb.addEventListener('pointercancel',sdRelease);
+hb.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(!$('#solder').hidden&&e.code==='Space'){e.preventDefault();if(!e.repeat)sdPress();}});
+document.addEventListener('keyup',e=>{if(!$('#solder').hidden&&e.code==='Space'){e.preventDefault();sdRelease();}});
+
+/* ================= picking ================= */
+const ray=new W.Raycaster(),ndc=new W.Vector2();let down=null;
+canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{
+  if(!down)return;const moved=Math.hypot(e.clientX-down[0],e.clientY-down[1]);down=null;if(moved>7)return;
+  const r=canvas.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(pick.filter(live),false),act=activeIds();
+  const h=hits.find(x=>act.includes(x.object.userData.id))||hits[0];
+  handle(h?h.object.userData.id:null);
+});
+
+/* ================= loop ================= */
+function resize(){const w=stageEl.clientWidth,h=stageEl.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);
+const clock=new W.Clock();
+function loop(){
+  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+  for(let i=tweens.length-1;i>=0;i--){const tw=tweens[i];tw.t+=dt;const k=Math.min(1,tw.t/tw.dur);tw.fn(ease(k));if(k>=1){tweens.splice(i,1);tw.done&&tw.done();}}
+  updateCord();
+  const act=activeIds(),k=.22+.22*Math.sin(t*6);
+  pick.forEach(m=>{const mt=m.material;if(mt&&mt.emissive&&m.userData.id!==undefined){if(act.includes(m.userData.id))mt.emissive.setRGB(k*1.1,k*.85,0);else if(!mt.userData.keepE)mt.emissive.setRGB(0,0,0);}});
+  if(act.length&&anchors[act[0]]){arrow.visible=true;const a=anchors[act[0]].getWorldPosition(V(0,0,0));arrow.position.set(a.x,a.y+.42+Math.sin(t*5)*.08,a.z);}
+  else arrow.visible=false;
+  if(G.on&&D){
+    if(D.spin)D.spin(dt);
+    const E=D.emit;
+    parts.forEach(p=>{
+      if(p.life<=0&&Math.random()<.3){p.life=.9;p.m.visible=true;
+        p.m.position.set(E.p.x+(Math.random()-.5)*E.spread*(E.dir.x?0:1),E.p.y+(Math.random()-.5)*E.spread*(E.dir.y>.9?0:1),E.p.z+(Math.random()-.5)*E.spread*(E.dir.z?0:1));
+        p.v.copy(E.dir).multiplyScalar(E.speed*(.8+Math.random()*.5)).add(V((Math.random()-.5)*.5,(Math.random()-.5)*.5,(Math.random()-.5)*.5));
+        p.m.material.color.set(E.colors[Math.random()<.5?0:1]);}
+      if(p.life>0){p.life-=dt;p.m.position.addScaledVector(p.v,dt);p.m.material.opacity=Math.max(0,p.life)*.9;p.m.scale.setScalar(1+(.9-p.life)*(E.grow||2));if(p.life<=0)p.m.visible=false;}
+    });
+  }
+  controls.update();renderer.render(scene,camera);requestAnimationFrame(loop);
+}
+resize();startStage('dryer',0);menuMachines();
+loop();
+})();
+</script>
+</body>
+</html>
