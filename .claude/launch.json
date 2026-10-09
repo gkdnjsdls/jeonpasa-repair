@@ -4,8 +4,8 @@
     {
       "name": "jeonpasa-repair",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8743"],
-      "port": 8743
+      "runtimeArgs": ["-m", "http.server", "8793"],
+      "port": 8793
     }
   ]
 }

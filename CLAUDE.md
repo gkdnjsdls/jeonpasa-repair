@@ -14,6 +14,8 @@
 - **예외: 각 물건의 마지막 단계는 가이드 없이 스스로 진단한다.** "회로 기판 퍼즐은 너무 어려워서 뺐다"는 원칙은 유지하되, 마지막 단계만 `S.diagnose(정답,[선택지...],cam,say)`로 교체해 원인을 직접 고르게 한다(버튼 3개 중 선택, 오답은 비활성화만 되고 실패는 없음). 틀린 횟수로 등급(S/A/B)이 매겨지고 힌트를 쓰면 무조건 B로 고정된다. 새 물건을 추가할 때 마지막 단계도 이 패턴을 따를지 먼저 정한다.
 - **돈은 진단 힌트 구매(`DIAG_COST`, 3,000원)에 쓴다.** 추후 "이제껏 고친 기계 부품으로 나만의 기기 만들기" 같은 돈 쓰는 곳을 추가하자는 아이디어가 나왔음 — 아직 미구현, 붙일 때는 부품 종류·조합 규칙부터 설계해야 한다.
 - **진동은 손맛이 있는 동작에만 붙인다.** 나사/납땜/문지르기/부품 떼고 끼우기처럼 "만지는" 동작에 `buzz(ms)`를 붙였고, 카메라 이동이나 메뉴 전환 같은 건 제외했다. `navigator.vibrate` 미지원 기기에서도 조용히 무시된다.
+- **같은 글로벌 키를 다른 물건이 다시 쓸 때는 `box:`/`slot()` 키를 분리한다.** 예: 토스터 열선은 드라이기 `heater`를 그대로 재사용하면 `fillBox`의 박스 미리보기 크기(`sc` 표)가 꼬여서 `theater`로 따로 뺐다. 클릭 태그 id(`S.trash`의 첫 인자)는 재사용해도 되지만, 두 번째 인자(슬롯 키)는 `D.obj`/`D.slots`/`fillBox` 조회에 쓰이므로 기존 키와 크기가 다르면 새로 만든다.
+- **로컬 미리보기 포트가 다른 프로젝트랑 겹칠 수 있다.** `.claude/launch.json`의 포트를 8743→8793으로 바꿨다 (같은 기기의 다른 프로젝트가 8743을 먼저 점유한 적 있음). 로컬 서버가 엉뚱한 페이지를 보여주면 포트 충돌부터 의심할 것.
 
 ## 파일
 
@@ -29,7 +31,7 @@
 | 환경 | 탁자, 벽, 콘센트, 플러그(+전선), 부품 상자 `boxG`, 테스터, 노란 화살표, 바람/김 입자 |
 | `tag(obj,id)` / `anchor(parent,id,[x,y,z])` | 클릭 대상 등록과 화살표·테스터 위치 지정 |
 | `screwAt`, `capsule`, `wireFix`, `dirt`, `slot` | 공용 부품: 나사, 작은 원통 부품(+양 끝 단자), 자르고 잇는 전선, 닦아 내는 때, 교체 가능한 부품 자리 |
-| `buildDryer` / `buildFan` / `buildKettle` / `buildCooker` / `buildRemote` / `buildMicrowave` | 물건별 3D 모델. 각자 `d.cams`(카메라 위치), `d.mov`(떼어 내는 덮개 등), `d.turnOn`, `d.emit`(작동 효과)를 정한다 |
+| `buildDryer` / `buildFan` / `buildKettle` / `buildCooker` / `buildRemote` / `buildMicrowave` / `buildToaster` / `buildVacuum` | 물건별 3D 모델. 각자 `d.cams`(카메라 위치), `d.mov`(떼어 내는 덮개 등), `d.turnOn`, `d.emit`(작동 효과)를 정한다 |
 | `S.*` | 단계 만드는 함수: `unplug`, `plugin`, `sOut`/`sIn`(나사), `away`/`back`(덮개), `test`(테스터), `look`(카메라 확대), `trash`/`insert`(부품 교체), `cut`/`strip`/`solderW`(전선 수리), `scrub`(닦기), `picks`(뽑기), `tap`(직접 동작), `on`(켜기), `diagnose`(가이드 없는 원인 선택 — 보통 각 물건 마지막 단계에만 씀) |
 | `openDiag`/`diagPick`/`diagHint` | `diagnose` 단계용 2D 선택 패널(`#diag`). 3D가 아니라 버튼 클릭이라 물건마다 카메라 구도를 안 맞춰도 됨 |
 | `MACH` | 물건 목록. `{name, icon, build, stages:[{title, cause, cfg, box, steps}]}` |
