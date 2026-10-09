@@ -10,11 +10,12 @@
 - **3D(three.js)로 만든다.** 물건 고르기 → 그 물건의 단계 목록 → 단계 플레이 순서로 진행한다.
 - **단계 수 = 그 물건의 실제 흔한 고장 원인 개수.** 3개로 맞추는 식이 아니다. 새 물건을 추가할 때도 실제 고장 원인을 조사해서 원인마다 한 단계씩 만든다.
 - 틀린 곳을 눌러도 실패는 없다 (기사님이 고개를 젓기만 한다). 납땜도 실패하면 다시 하면 된다.
+- **물건은 순서대로 해금된다.** 처음엔 헤어드라이기만 할 수 있고, 나머지는 `MACH`/`MKEYS`에 적힌 순서대로 "바로 앞 물건을 2단계까지 깨야" 잠금이 풀린다 (잠긴 카드는 물음표만 보임). `menuMachines`의 `isUnlocked`에 있다. 순서를 바꾸고 싶으면 `MKEYS`(= `MACH` 객체의 키 순서)만 바꾸면 된다.
 
 ## 파일
 
 - `index.html`: 지금 버전. HTML·CSS·JS가 파일 하나에 다 들어 있고, 빌드 도구는 없다.
-- `versions/`: 이전 버전들. 기록용이라 손대지 않는다. 큰 변경을 끝내면 `index.html`을 `versions/v7-...html`로 복사해 둔다.
+- `versions/`: 이전 버전들. 기록용이라 손대지 않는다. 큰 변경을 끝내면 `index.html`을 `versions/v9-...html`로 복사해 둔다.
 - 외부 의존성: three.js r128(cdnjs)과 OrbitControls(jsdelivr `three@0.128.0/examples/js`). 버전을 올리면 OrbitControls 경로와 API가 달라지니 주의한다.
 
 ## index.html 구조
@@ -25,7 +26,7 @@
 | 환경 | 탁자, 벽, 콘센트, 플러그(+전선), 부품 상자 `boxG`, 테스터, 노란 화살표, 바람/김 입자 |
 | `tag(obj,id)` / `anchor(parent,id,[x,y,z])` | 클릭 대상 등록과 화살표·테스터 위치 지정 |
 | `screwAt`, `capsule`, `wireFix`, `dirt`, `slot` | 공용 부품: 나사, 작은 원통 부품(+양 끝 단자), 자르고 잇는 전선, 닦아 내는 때, 교체 가능한 부품 자리 |
-| `buildDryer` / `buildFan` / `buildKettle` / `buildCooker` / `buildRemote` | 물건별 3D 모델. 각자 `d.cams`(카메라 위치), `d.mov`(떼어 내는 덮개 등), `d.turnOn`, `d.emit`(작동 효과)를 정한다 |
+| `buildDryer` / `buildFan` / `buildKettle` / `buildCooker` / `buildRemote` / `buildMicrowave` | 물건별 3D 모델. 각자 `d.cams`(카메라 위치), `d.mov`(떼어 내는 덮개 등), `d.turnOn`, `d.emit`(작동 효과)를 정한다 |
 | `S.*` | 단계 만드는 함수: `unplug`, `plugin`, `sOut`/`sIn`(나사), `away`/`back`(덮개), `test`(테스터), `look`(카메라 확대), `trash`/`insert`(부품 교체), `cut`/`strip`/`solderW`(전선 수리), `scrub`(닦기), `picks`(뽑기), `tap`(직접 동작), `on`(켜기) |
 | `MACH` | 물건 목록. `{name, icon, build, stages:[{title, cause, cfg, box, steps}]}` |
 | 진행 저장 | `localStorage` 키 `jeonpasa-3d-v2`. 저장 구조를 바꾸면 키 이름도 바꾼다 |
@@ -39,6 +40,10 @@
 5. `MACH`에 물건과 단계를 넣는다. 교체 부품이 있으면 `box:'슬롯이름'`을 쓰고, `fillBox`의 크기 표에도 추가한다.
 6. 브라우저로 열어 모든 단계를 끝까지 해 본다.
 
+안이 보여야 하는 물건(전자레인지 뒤판 속, 문 열면 보이는 통 등)은 몸통을 꽉 찬 `BoxGeometry` 하나로 만들면 안 된다 — 위/아래/옆/앞 면을 따로 붙이고 비울 자리(문, 뒤판)는 아예 면을 만들지 않아야, 덮개를 떼어 냈을 때 실제로 안이 뚫려 보인다 (`buildMicrowave` 참고).
+
 ## 확인 방법
 
 `index.html`을 더블클릭해서 열어도 되고, 로컬 서버로 열어도 된다 (`npx serve`, `python -m http.server` 등). 브라우저 콘솔에 오류가 없는지, 노란 화살표가 화면 밖으로 나가지 않는지, 카메라가 대상을 잘 보여 주는지 확인한다.
+
+`.stage`의 `aspect-ratio`는 각 물건의 `d.cams` 카메라 구도와 맞물려 있으니, 세로로 긴 모바일 화면에서 빈 공간이 생겨도 `aspect-ratio`를 건드리지 말 것 (화각이 좁아져 화살표·부품이 화면 밖으로 잘림). 남는 세로 공간은 `.game{align-content:center}`로 가운데 정렬해서 처리한다.

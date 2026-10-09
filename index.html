@@ -11,7 +11,7 @@
   --bg:#13222a; --panel:#1c2f36; --panel-2:#243c44; --line:#35525c;
   --ink:#eef3ef; --muted:#8fa6a2;
   --copper:#e9914c; --copper-ink:#2a1608;
-  --paper:#f4ecd8; --paper-ink:#2b241a;
+  --paper:#f4ecd8; --paper-t:#f4ecd8d9; --paper-ink:#2b241a;
   --glow:#ffd84a; --ok:#5fe08f; --bad:#ff6f5c;
 }
 html,body{background:var(--bg);color:var(--ink);height:100%}
@@ -34,22 +34,22 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .coin b{font-size:18px;font-variant-numeric:tabular-nums;color:var(--glow)}
 
 .stage{position:relative;width:100%;aspect-ratio:16/10;max-height:calc(100vh - 100px);min-height:380px;border-radius:16px;overflow:hidden;background:#0f1c22;border:1px solid var(--line)}
-@media (max-width:640px){.stage{aspect-ratio:3/4}}
+@media (max-width:640px){.stage{aspect-ratio:3/4}.game{min-height:100vh;align-content:center}}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
 .mentor{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:flex-end;gap:8px;pointer-events:none}
 .mentor .face{width:70px;height:70px;flex:none}
 .mentor.shake .face{animation:no .45s}
 @keyframes no{20%{transform:rotate(-12deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
-.bub{display:flex;align-items:center;gap:12px;background:var(--paper);color:var(--paper-ink);border-radius:18px;padding:10px 16px 10px 10px;position:relative;margin-bottom:28px;box-shadow:0 4px 0 #0004;max-width:min(560px,100%);min-width:0}
-.bub::before{content:"";position:absolute;left:-10px;bottom:16px;border:10px solid transparent;border-right-color:var(--paper);border-left:0}
+.bub{display:flex;align-items:center;gap:12px;background:var(--paper-t);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--paper-ink);border-radius:18px;padding:10px 16px 10px 10px;position:relative;margin-bottom:28px;box-shadow:0 4px 0 #0004;max-width:min(560px,100%);min-width:0}
+.bub::before{content:"";position:absolute;left:-10px;bottom:16px;border:10px solid transparent;border-right-color:var(--paper-t);border-left:0}
 .bub .ico{width:52px;height:52px;flex:none;background:#2b241a;color:var(--paper);border-radius:14px;padding:10px}
 .bub p{margin:0;font-size:17px;line-height:1.45;font-weight:600}
 .bub.pop{animation:pop .35s}
 @keyframes pop{50%{transform:scale(1.06)}}
-.mentor.shake .bub{background:#ffd6cf}
+.mentor.shake .bub{background:#ffd6cfd9}
 
-.note{position:absolute;right:12px;top:12px;background:var(--paper);color:var(--paper-ink);border-radius:14px;padding:8px 14px 8px 8px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 0 #0004;pointer-events:none;max-width:60%}
+.note{position:absolute;right:12px;top:12px;background:var(--paper-t);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--paper-ink);border-radius:14px;padding:8px 14px 8px 8px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 0 #0004;pointer-events:none;max-width:60%}
 .note span{width:38px;height:38px;flex:none}
 .note p{margin:0;font-weight:700;font-size:15px}
 
@@ -65,7 +65,10 @@ svg.i{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .card{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:16px 12px 14px;display:grid;justify-items:center;gap:8px;text-align:center;transition:transform .15s,border-color .15s}
 .card:hover{transform:translateY(-4px);border-color:var(--copper)}
+.card.locked{opacity:.5;cursor:not-allowed}
+.card.locked:hover{transform:none;border-color:var(--line)}
 .card .big{width:80px;height:80px;color:#3fb6a8}
+.card.locked .big{color:var(--muted)}
 .card b{font-size:17px}
 .card small{color:var(--muted);font-size:13px}
 .card .num{position:absolute;left:10px;top:10px;width:34px;height:34px;border-radius:50%;background:var(--copper);color:var(--copper-ink);display:grid;place-items:center;font-size:18px;font-weight:800}
@@ -182,6 +185,7 @@ const IC={
   kettle:'<path d="M6 8h11l1 12H5z"/><path d="M17 10c3 0 3 7 0 7M6 10L3 8M8 8V6h7v2"/>',
   rice:'<path d="M4 10h16v8a3 3 0 01-3 3H7a3 3 0 01-3-3z"/><path d="M3 10c1-4 5-6 9-6s8 2 9 6"/><path d="M9 14h6"/>',
   remote:'<rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="6" r="1.2"/><path d="M10.5 11h3M10.5 14h3M10.5 17h3"/>',
+  microwave:'<rect x="2" y="4" width="20" height="16" rx="2"/><rect x="4.5" y="7" width="11" height="10" rx="1"/><circle cx="19" cy="9" r=".6"/><circle cx="19" cy="12" r=".6"/><path d="M17 15.5h4"/>',
   phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="6" r="1.5"/>',
   back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
   check:'<path d="M5 12l5 5 9-10"/>',
@@ -189,6 +193,7 @@ const IC={
   mute:'<path d="M3 9h4l5-4v14l-5-4H3z"/><path d="M16 9l5 6M21 9l-5 6"/>',
   no:'<path d="M6 6l12 12M18 6L6 18"/>',
   warn:'<path d="M12 3l9 17H3z"/><path d="M12 10v4M12 17v.5"/>',
+  q:'<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 115.2 1.5c-.6.9-1.4 1.3-1.9 2.1-.3.5-.3 1-.3 1.4"/><path d="M12 17.5v.01"/>',
 };
 const svg=(k,sw)=>`<svg class="i" viewBox="0 0 24 24"${sw?` stroke-width="${sw}"`:''}>${IC[k]}</svg>`;
 
@@ -692,6 +697,87 @@ function irCheck(done){
   });
 }
 
+/* ================= MICROWAVE ================= */
+function makeDoorSw(bad){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(.16,.1,.12),mat('#2b2e33'),g);
+  M_(new W.BoxGeometry(.045,.035,.14),mat(bad?'#8b5a2b':'#e0a030'),g,[.07,.04,bad?.08:0],[bad?.5:0,0,0]);
+  if(bad)M_(new W.BoxGeometry(.02,.045,.07),mat('#111'),g,[.07,.03,-.02]);
+  tag(g,'mwsw');anchor(g,'mwsw',[0,.08,0]);
+  const a=M_(new W.SphereGeometry(.028,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.09,-.03,0]);
+  const b=M_(new W.SphereGeometry(.028,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.09,-.03,.07]);
+  tag(a,'swA');tag(b,'swB');anchor(g,'swA',[-.09,-.06,0]);anchor(g,'swB',[-.09,-.06,.07]);
+  return g;
+}
+function makeMag(bad){
+  const g=new W.Group();
+  M_(cyl(.15,.15,.32,20),mat(bad?'#2a1c12':'#8a9196',{metalness:.5,roughness:.35}),g,[0,0,0],[0,0,PI/2]);
+  for(let i=-2;i<=2;i++)M_(new W.BoxGeometry(.012,.28,.28),mat(bad?'#1c120a':'#aab1b6',{metalness:.4}),g,[i*.05,0,0],[0,0,PI/2]);
+  if(bad)M_(new W.SphereGeometry(.085,10,8),mat('#140c06'),g,[0,.1,.1]).scale.set(1.2,.6,.5);
+  tag(g,'mag');anchor(g,'mag',[0,.2,0]);
+  const a=M_(new W.SphereGeometry(.032,10,8),mat('#e3e7ea',{metalness:.6}),g,[0,.16,.15]);
+  const b=M_(new W.SphereGeometry(.032,10,8),mat('#e3e7ea',{metalness:.6}),g,[0,.16,-.15]);
+  tag(a,'mgA');tag(b,'mgB');anchor(g,'mgA',[0,.19,.16]);anchor(g,'mgB',[0,.19,-.16]);
+  return g;
+}
+function buildMicrowave(cfg){
+  const d=newD(V(.95,-1.08,-.7)),R=d.root;
+  const BODY='#e7e9e6',DARK='#24272b';
+  const CY=-.5,hx=1.15,hy=.6,hz=.75;
+  /* shell: open at the back so the bay behind the back panel is a real cavity */
+  M_(new W.BoxGeometry(2.3,.04,1.5),mat(BODY),R,[0,CY+hy,0]);
+  M_(new W.BoxGeometry(2.3,.04,1.5),mat(BODY),R,[0,CY-hy,0]);
+  M_(new W.BoxGeometry(.04,1.2,1.5),mat(BODY),R,[-hx,CY,0]);
+  M_(new W.BoxGeometry(.04,1.2,1.5),mat(BODY),R,[hx,CY,0]);
+  M_(new W.BoxGeometry(1.0,1.2,.04),mat(BODY),R,[.65,CY,hz]); /* front wall, panel side only (door side stays open) */
+  M_(new W.BoxGeometry(2.32,.05,1.52),mat('#c7cbc6'),R,[0,CY-.6,0]);
+  /* door */
+  const dp=new W.Group();dp.position.set(-1.15,CY,.76);R.add(dp);d.door=dp;
+  M_(new W.BoxGeometry(1.3,1.0,.08),mat(BODY),dp,[.66,0,.04]);
+  M_(new W.BoxGeometry(.98,.72,.02),mat('#30383d',{transparent:true,opacity:.82}),dp,[.66,0,.09]);
+  for(let i=-3;i<=3;i++)M_(new W.BoxGeometry(.01,.7,.004),mat('#555'),dp,[.66+i*.13,0,.1]);
+  M_(cyl(.018,.018,.78,8),mat('#9aa5ab',{metalness:.6}),dp,[1.22,0,.14]);
+  tag(dp,'door');anchor(dp,'door',[.9,0,.17]);
+  /* turntable (centered under the door opening, not the whole unit) */
+  const TX=-.5;
+  const tray=M_(cyl(.46,.46,.025,40),mat('#dfe3e6',{transparent:true,opacity:.88}),R,[TX,CY-.53,.05]);
+  tag(tray,'tray');anchor(R,'tray',[TX,CY-.46,.05]);
+  d.mov.tray={get:()=>tray,p:[-2.0,-1.0,1.5],e:[0,0,0]};
+  M_(new W.TorusGeometry(.4,.028,8,30),mat('#aeb3b6'),R,[TX,CY-.57,.05],[PI/2,0,0]);
+  if(cfg.dirty)dirt(R,'gunk2',new W.TorusGeometry(.4,.045,8,30),'#3a2816',[TX,CY-.57,.05],[PI/2,0,0],.92);
+  /* control panel */
+  const pn=new W.Group();pn.position.set(.65,CY+.1,.76);R.add(pn);
+  M_(new W.BoxGeometry(.86,1.0,.06),mat(DARK),pn);
+  for(let gy=-1;gy<=1;gy++)for(let gx=-1;gx<=1;gx++)M_(cyl(.035,.035,.02,14),mat('#52575c'),pn,[gx*.2,gy*.18-.1,.034],[PI/2,0,0]);
+  d.btn=M_(cyl(.045,.045,.022,16),mat('#e9914c'),pn,[0,.38,.034],[PI/2,0,0]);tag(d.btn,'btn');anchor(pn,'btn',[0,.42,.05]);
+  d.led=M_(new W.SphereGeometry(.028,10,8),mat('#3a1a10'),pn,[-.3,.38,.034]);
+  tag(pn,'panel');anchor(pn,'panel',[0,.55,.1]);
+  screwAt(pn,'p1',[-.38,-.46,.035],[0,0,1]);screwAt(pn,'p2',[.38,-.46,.035],[0,0,1]);
+  /* body-side contacts, mounted on the front wall's outer face: stay put when the panel is lifted away */
+  const bA=M_(new W.SphereGeometry(.025,8,6),mat('#e3e7ea',{metalness:.6}),R,[.25,CY-.36,.775]);
+  const bB=M_(new W.SphereGeometry(.025,8,6),mat('#e3e7ea',{metalness:.6}),R,[1.05,CY-.36,.775]);
+  tag(bA,'bA');tag(bB,'bB');anchor(R,'bA',[.25,CY-.34,.8]);anchor(R,'bB',[1.05,CY-.34,.8]);
+  if(cfg.pdirt)dirt(R,'pdirt',new W.BoxGeometry(.6,.6,.01),'#111',[.65,CY-.36,.772],[0,0,0],.85);
+  d.mov.panel={get:()=>pn,p:[1.9,-1.0,1.9],e:[-PI/2,0,0]};
+  /* back panel + bay */
+  const bp=new W.Group();bp.position.set(0,CY,-.73);R.add(bp);
+  M_(new W.BoxGeometry(2.26,1.14,.05),mat(DARK),bp);
+  tag(bp,'backp');anchor(bp,'backp',[0,.65,0]);
+  screwAt(bp,'bk1',[-.9,.5,.028],[0,0,1]);screwAt(bp,'bk2',[.9,.5,.028],[0,0,1]);screwAt(bp,'bk3',[0,-.5,.028],[0,0,1]);
+  d.mov.backp={get:()=>bp,p:[2.6,-1.06,-2.1],e:[0,0,0]};
+  slot('mwsw',R,[-.65,CY+.3,-.62],[0,PI/2,0],s=>makeDoorSw(s==='bad'),cfg.sw||'ok');
+  slot('mwfuse',R,[0,CY+.3,-.62],[0,0,0],s=>capsule(s==='bad','fsA','fsB','mwfuse',.2),cfg.fuse||'ok');
+  slot('mag',R,[.65,CY+.3,-.6],[0,0,0],s=>makeMag(s==='bad'),cfg.mag||'ok');
+  d.cams={home:[[.4,2.7,9.6],[-.2,-.2,0]],inside:[[0,.3,-3.3],[0,-.1,-.6]],
+    swZ:[[-.65,.0,-2.2],[-.65,-.2,-.62]],fuseZ:[[0,.0,-2.2],[0,-.2,-.62]],magZ:[[.65,.0,-2.2],[.65,-.2,-.6]],
+    trayZ:[[-.5,-.05,2.5],[-.5,-.72,.1]],panelZ:[[1.0,-.5,2.3],[.65,-.6,.85]]};
+  d.turnOn=done=>{const b=d.btn,z=b.position.z;tween(.15,e=>{b.position.z=z-.015*e;},()=>tween(.15,e=>{b.position.z=z-.015*(1-e);},()=>{
+    d.led.material.userData.keepE=true;d.led.material.color.set('#5fe08f');d.led.material.emissive.set('#2fbf6a');done();}));};
+  d.spin=dt=>{tray.rotation.y+=dt*1.1;};
+  d.emit={p:V(.4,CY+.55,0),dir:V(0,1,0),spread:.5,speed:.9,colors:[0xfff2c0,0xffffff]};
+  return d;
+}
+
 /* ================= tweens & movement ================= */
 const tweens=[];
 const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
@@ -793,6 +879,11 @@ const rOpen=()=>[S.away('bcov','bcov','home','건전지 뚜껑을 열어요.'),S
   S.sOut(['q1'],'home','안쪽 작은 나사를 풀어요.'),S.away('rtop','rtop','home','윗 껍데기를 들어 올려요.')];
 const rClose=()=>[S.back('rtop','rtop','home','윗 껍데기를 덮어요.'),S.sIn(['q1'],'home'),S.back('bat','batOut','home','건전지를 다시 넣어요.'),
   S.back('bcov','bcov','home','뚜껑을 닫아요.'),S.on('btn','home','TV를 향해 빨간 버튼을 눌러 봐요!')];
+/* microwave helpers */
+const mOpen=()=>S.tap('lift','door','home','문을 열어요.',d=>tween(.7,e=>{D.door.rotation.y=-1.9*e;},d));
+const mClose=()=>S.tap('down','door','home','문을 닫아요.',d=>tween(.7,e=>{D.door.rotation.y=-1.9*(1-e);},d));
+const mBayOpen=(cam,say)=>[S.unplug(),S.sOut(['bk1','bk2','bk3'],cam||'inside',say||'뒤판 나사 세 개를 풀어요.'),S.away('backp','backp',cam||'inside','뒤판을 떼어 내요.')];
+const mBayClose=(cam)=>[S.back('backp','backp',cam||'inside','뒤판을 다시 덮어요.'),S.sIn(['bk1','bk2','bk3'],cam||'inside'),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')];
 
 const MACH={
   dryer:{name:'헤어드라이기',icon:'dryer',build:buildDryer,stages:[
@@ -953,6 +1044,38 @@ const MACH={
       S.trash('xtal','xtal','xtalZ','깨진 부품을 빼요.'),
       S.insert('xtal','home','새 부품을 끼워요.'),...rClose()]},
   ]},
+  microwave:{name:'전자레인지',icon:'microwave',build:buildMicrowave,stages:[
+    {title:'문을 닫아도 안 켜져요',cause:'문이 닫힌 걸 알려주는 안전 스위치가 망가졌었어요',cfg:{sw:'bad'},box:'mwsw',steps:[...mBayOpen('swZ','뒤판 나사 세 개를 풀어요.'),
+      S.test(['swA','swB'],false,'swZ','문 안전 스위치 양쪽을 재요. '+TT),
+      S.look('mwsw','swZ','문을 닫으면 눌리는 스위치예요. 고리가 휘었어요.'),
+      S.trash('mwsw','mwsw','swZ','망가진 스위치를 빼요.'),
+      S.insert('mwsw','inside','새 스위치를 끼워요.'),
+      S.test(['swA','swB'],true,'swZ','다시 재 봐요.'),...mBayClose('swZ')]},
+    {title:'아예 먹통이에요, 불도 안 들어와요',cause:'전기를 지켜 주는 메인 퓨즈가 끊어졌었어요',cfg:{fuse:'bad'},box:'mwfuse',steps:[...mBayOpen('fuseZ','뒤판 나사 세 개를 풀어요.'),
+      S.test(['fsA','fsB'],false,'fuseZ','은색 통 양쪽을 재요. '+TT),
+      S.look('mwfuse','fuseZ','너무 센 전기가 흐르면 스스로 끊어지는 안전 부품이에요.'),
+      S.trash('mwfuse','mwfuse','fuseZ','끊어졌어요. 빼요.'),
+      S.insert('mwfuse','inside','새 안전 부품을 끼워요.'),
+      S.test(['fsA','fsB'],true,'fuseZ','다시 재 봐요.'),...mBayClose('fuseZ')]},
+    {title:'돌아가긴 하는데 음식이 안 뜨거워요',cause:'마이크로파를 만드는 가열 부품이 고장 났었어요',cfg:{mag:'bad'},box:'mag',steps:[...mBayOpen('magZ','뒤판 나사 세 개를 풀어요.'),
+      S.test(['mgA','mgB'],false,'magZ','가열 부품 양쪽 단자를 재요. '+TT),
+      S.look('mag','magZ','음식을 데우는 열을 만드는 부품이에요. 까맣게 탔어요.'),
+      S.trash('mag','mag','magZ','탄 부품을 빼요.'),
+      S.insert('mag','inside','새 부품을 끼워요.'),
+      S.test(['mgA','mgB'],true,'magZ','다시 재 봐요.'),...mBayClose('magZ')]},
+    {title:'접시가 안 돌아요',cause:'회전판 바퀴에 음식 찌꺼기와 기름때가 굳어 있었어요',cfg:{dirty:true},steps:[S.unplug(),mOpen(),
+      S.away('tray','tray','trayZ','회전판을 들어내요.'),
+      S.look('gunk2','trayZ','바퀴가 구르는 테두리를 가까이 봐요. 찌꺼기가 굳었네요.'),
+      S.scrub('gunk2',6,'trayZ','굳은 때를 솔로 문질러요.'),
+      S.back('tray','tray','trayZ','회전판을 다시 올려요.'),mClose(),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')]},
+    {title:'버튼이 가끔 안 눌려요',cause:'조작판 버튼 뒤 접점에 때가 껴서 전기가 안 통했어요',cfg:{pdirt:true},steps:[S.unplug(),
+      S.sOut(['p1','p2'],'panelZ','조작판 나사 두 개를 풀어요.'),
+      S.away('panel','panel','panelZ','조작판을 떼어 내요.'),
+      S.test(['bA','bB'],false,'panelZ','버튼 뒤 접점 두 개를 재요. '+TT),
+      S.scrub('pdirt',6,'panelZ','까만 때를 솔로 문질러요.'),
+      S.test(['bA','bB'],true,'panelZ','다시 재 봐요.'),
+      S.back('panel','panel','panelZ','조작판을 다시 붙여요.'),S.sIn(['p1','p2'],'panelZ'),S.plugin(),S.on('btn','home','버튼을 눌러 봐요!')]},
+  ]},
 };
 const MKEYS=Object.keys(MACH);
 
@@ -965,7 +1088,7 @@ function fillBox(kind){
   if(kind==='oil')o=bottle('#e8c34a');
   else if(kind==='vinegar')o=bottle('#e8f0f2');
   else{const keep=Object.assign({},anchors);o=D.slots[kind].make('new');anchors=keep;
-    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8}[kind]||1;o.scale.setScalar(sc);}
+    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8,mwsw:1.3,mwfuse:1.3,mag:.8}[kind]||1;o.scale.setScalar(sc);}
   o.traverse(m=>{if(m.isMesh){m.userData.id='box';pick.push(m);}});
   boxContent.add(o);
 }
@@ -1039,11 +1162,17 @@ function finish(){
 }
 
 /* ================= menus ================= */
+function doneCount(k){return MACH[k].stages.filter((_,i)=>P.done.includes(k+'-'+i)).length;}
+function isUnlocked(k){const i=MKEYS.indexOf(k);return i<=0||doneCount(MKEYS[i-1])>=2;}
 function menuMachines(){
   G.busy=true;$('#win').hidden=true;$('#menu').hidden=false;
   let h='<div class="cards">';
-  MKEYS.forEach(k=>{const m=MACH[k],n=m.stages.length,d=m.stages.filter((_,i)=>P.done.includes(k+'-'+i)).length;
-    h+=`<button class="card" type="button" data-m="${k}"><span class="big">${svg(m.icon,1.5)}</span><b>${m.name}</b><small>${d} / ${n}</small><span class="bar"><i style="width:${d/n*100}%"></i></span></button>`;});
+  MKEYS.forEach(k=>{
+    const m=MACH[k],n=m.stages.length,d=doneCount(k);
+    h+=isUnlocked(k)
+      ?`<button class="card" type="button" data-m="${k}"><span class="big">${svg(m.icon,1.5)}</span><b>${m.name}</b><small>${d} / ${n}</small><span class="bar"><i style="width:${d/n*100}%"></i></span></button>`
+      :`<button class="card locked" type="button" disabled><span class="big">${svg('q',1.5)}</span><b>?</b><small>2단계 깨면 열려요</small></button>`;
+  });
   $('#menuIn').innerHTML=h+'</div>';
   $('#menuIn').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>menuStages(b.dataset.m));
 }
