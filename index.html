@@ -219,6 +219,7 @@ const IC={
   remote:'<rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="6" r="1.2"/><path d="M10.5 11h3M10.5 14h3M10.5 17h3"/>',
   microwave:'<rect x="2" y="4" width="20" height="16" rx="2"/><rect x="4.5" y="7" width="11" height="10" rx="1"/><circle cx="19" cy="9" r=".6"/><circle cx="19" cy="12" r=".6"/><path d="M17 15.5h4"/>',
   toaster:'<rect x="3" y="9" width="16" height="11" rx="2"/><path d="M7 9V5M12 9V5"/><rect x="18.5" y="12" width="3" height="5" rx="1"/>',
+  press:'<path d="M2 20h20"/><path d="M3 17c0-5 4-7 9-7h8v5a2 2 0 01-2 2z"/><path d="M8 10V8a4 4 0 017-1"/>',
   vacuum:'<path d="M12 2v9"/><circle cx="12" cy="2" r="1.2"/><path d="M7 20h10l-1.2-7H8.2z"/><circle cx="9" cy="20.5" r="1.3"/><circle cx="15" cy="20.5" r="1.3"/>',
   phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="6" r="1.5"/>',
   back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
@@ -238,7 +239,7 @@ const P={money:0,done:[]};
 try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){P.money=d.money||0;P.done=d.done||[];}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}}
 /* 돈은 쓰는 게 아니라 모으는 목표. 전 단계 첫 수리 보상 합계가 약 65만원이라 가게 열기를 60만원에 둠 */
-const GOALS=[{at:150000,ic:'driver',n:'공구 선반'},{at:350000,ic:'look',n:'창문'},{at:600000,ic:'shop',n:'가게 간판'}];
+const GOALS=[{at:150000,ic:'driver',n:'공구 선반'},{at:350000,ic:'look',n:'창문'},{at:670000,ic:'shop',n:'가게 간판'}];
 const GOAL=GOALS[GOALS.length-1].at;
 function showMoney(){
   $('#money').textContent=P.money.toLocaleString('ko-KR');
@@ -926,6 +927,76 @@ function buildVacuum(cfg){
   return d;
 }
 
+/* ================= IRON ================= */
+function makeThermo(bad){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(.34,.14,.28),mat('#2b2e33'),g);
+  M_(cyl(.06,.06,.12,14),mat('#c9cdd1',{metalness:.6}),g,[0,.12,0]);
+  M_(new W.BoxGeometry(.26,.025,.08),mat(bad?'#7a6a50':'#dfe3e6',{metalness:bad?.1:.6,roughness:bad?.9:.3}),g,[0,.09,.1],[0,0,bad?.3:0]);
+  if(bad)M_(new W.SphereGeometry(.04,10,8),mat('#1f150c'),g,[.09,.11,.1]);
+  tag(g,'thermo');anchor(g,'thermo',[0,.24,0]);
+  const a=M_(new W.SphereGeometry(.04,10,8),mat('#e3e7ea',{metalness:.6}),g,[-.2,0,.08]);
+  const b=M_(new W.SphereGeometry(.04,10,8),mat('#e3e7ea',{metalness:.6}),g,[.2,0,.08]);
+  tag(a,'thA');tag(b,'thB');anchor(g,'thA',[-.2,.05,.1]);anchor(g,'thB',[.2,.05,.1]);
+  return g;
+}
+function makeSeal(bad){
+  const g=new W.Group();
+  M_(new W.TorusGeometry(.22,.035,10,36,bad?PI*1.7:PI*2),mat(bad?'#8a7a5a':'#e1e4df',{roughness:.9}),g,[0,0,0],[PI/2,0,0]);
+  if(bad)M_(new W.BoxGeometry(.1,.04,.05),mat('#5a4a30'),g,[.2,0,.14],[0,.7,0]);
+  tag(g,'seal');anchor(g,'seal',[0,.16,0]);return g;
+}
+function buildIron(cfg){
+  const d=newD(V(0,-.8,-.9)),R=d.root;
+  const K=new W.Group();R.add(K);d.K=K;d.Khome=K.position.clone();
+  /* 바닥판: 앞이 뾰족한 다리미 모양 */
+  const sp=new W.Shape();
+  sp.moveTo(0,.95);
+  sp.bezierCurveTo(.4,.68,.52,.2,.5,-.2);
+  sp.bezierCurveTo(.5,-.7,.3,-.8,0,-.8);
+  sp.bezierCurveTo(-.3,-.8,-.5,-.7,-.5,-.2);
+  sp.bezierCurveTo(-.52,.2,-.4,.68,0,.95);
+  const plate=M_(new W.ExtrudeGeometry(sp,{depth:.13,bevelEnabled:false,curveSegments:14}),mat('#c9ced3',{metalness:.7,roughness:.25}),K,[0,-.95,0],[PI/2,0,0]);
+  tag(plate,'iron');anchor(K,'iron',[0,-.78,.45]);
+  [[0,.75],[.22,.5],[-.22,.5],[.3,.1],[-.3,.1],[.2,-.35],[-.2,-.35]].forEach(([x,z])=>M_(cyl(.045,.045,.02,10),mat('#24292c'),K,[x,-1.075,z]));
+  if(cfg.holes)dirt(K,'holes',cyl(.38,.38,.012,26),'#f0ebdc',[0,-1.082,.3],[0,0,0],.92);
+  if(cfg.burn)dirt(K,'burn',cyl(.34,.34,.012,26),'#6b4a22',[0,-1.082,-.1],[0,0,0],.92);
+  /* 물통 + 아래 고무 패킹 */
+  const tk=new W.Group();tk.position.set(0,-.45,.3);K.add(tk);
+  M_(new W.BoxGeometry(.62,.46,.66),mat('#bfe0ea',{transparent:true,opacity:.45,roughness:.2}),tk);
+  M_(new W.BoxGeometry(.5,.18,.5),mat('#7fc4de',{transparent:true,opacity:.6}),tk,[0,-.11,0]);
+  M_(cyl(.09,.09,.08,14),mat('#2f353b'),tk,[0,.26,.1]);
+  tag(tk,'tank');anchor(tk,'tank',[0,.36,-.2]);
+  d.mov.tank={get:()=>tk,p:[-1.9,-.86,1.1],e:[0,0,0]};
+  slot('iseal',K,[0,-.83,.3],[0,0,0],s=>makeSeal(s==='bad'),cfg.seal||'ok');
+  /* 속: 온도 조절 부품 + 전원선 */
+  slot('ithermo',K,[0,-.8,-.25],[0,0,0],s=>makeThermo(s==='bad'),cfg.thermo||'ok');
+  const cA=M_(new W.SphereGeometry(.05,12,8),mat('#e3e7ea',{metalness:.6}),K,[-.34,-.84,-.68]);tag(cA,'icA');anchor(K,'icA',[-.34,-.79,-.68]);
+  const cB=M_(new W.SphereGeometry(.05,12,8),mat('#e3e7ea',{metalness:.6}),K,[.34,-.84,-.68]);tag(cB,'icB');anchor(K,'icB',[.34,-.79,-.68]);
+  if(cfg.cord)d.wf=wireFix(K,[-.34,-.84,-.68],[.34,-.84,-.68],'#8a6a4a','burnt');
+  else tube(K,[[-.34,-.84,-.68],[.34,-.84,-.68]],'#8a6a4a',.032);
+  tube(K,[[.34,-.84,-.68],[.2,-.84,-.4],[.1,-.82,-.3]],'#d64a3a',.02);
+  /* 덮개 + 손잡이 + 온도 손잡이 */
+  const cv=new W.Group();K.add(cv);const CL='#eef2f4';
+  M_(new W.BoxGeometry(.9,.6,.86),mat(CL),cv,[0,-.55,-.4]);
+  M_(cyl(.28,.28,.9,22),mat(CL),cv,[0,-.25,-.4],[0,0,PI/2]);
+  M_(new W.TorusGeometry(.33,.07,10,28,PI),mat('#2f353b'),cv,[0,-.2,-.35],[0,PI/2,0]);
+  tag(cv,'icover');anchor(cv,'icover',[0,.1,-.35]);
+  d.knob=M_(cyl(.15,.15,.08,20),mat('#2f353b'),cv,[.47,-.55,-.3],[0,0,PI/2]);
+  M_(new W.BoxGeometry(.02,.03,.12),mat('#e9914c'),d.knob,[0,.045,.06]);
+  tag(d.knob,'dial');anchor(cv,'dial',[.52,-.42,-.3]);
+  screwAt(cv,'i1',[.46,-.8,-.72],[1,0,0]);screwAt(cv,'i2',[.46,-.8,-.08],[1,0,0]);
+  d.mov.icover={get:()=>cv,p:[-2.2,-.24,1.4],e:[0,0,0]};
+  d.flipPose={p:V(0,-.25,.3),q:new W.Quaternion().setFromEuler(new W.Euler(0,0,PI))};
+  d.cams={home:[[1.8,1.3,4.0],[0,-.6,0]],iin:[[1.2,1.5,-1.2],[0,-.78,-.35]],thermoZ:[[.6,.9,-.9],[0,-.8,-.25]],cordZ:[[.5,.7,-1.6],[0,-.84,-.68]],
+    ibottom:[[.1,3.0,2.4],[0,.83,.4]],holeZ:[[.2,2.3,1.7],[0,.83,.6]],burnZ:[[.2,2.2,1.3],[0,.83,.2]],
+    tankZ:[[1.0,.6,2.6],[0,-.45,.3]],sealZ:[[.5,.2,2.0],[0,-.83,.3]]};
+  d.turnOn=done=>tween(.6,e=>{d.knob.rotation.y=-2.2*e;},done);
+  d.spin=null;
+  d.emit={p:V(0,-.85,.7),dir:V(0,.5,.8),spread:.4,speed:1.2,colors:[0xffffff,0xe6eef2],grow:4};
+  return d;
+}
+
 /* ================= tweens & movement ================= */
 const tweens=[];
 const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
@@ -1044,6 +1115,13 @@ const tClose=()=>[S.back('plate','plate','tbottom','바닥판을 덮어요.'),S.
 /* vacuum helpers */
 const vPanelOpen=(cam,say)=>[S.unplug(),S.sOut(['v1','v2'],cam||'panelZ',say||'손잡이 쪽 나사 두 개를 풀어요.'),S.away('panel','panel',cam||'panelZ','덮개를 떼어 내요.')];
 const vPanelClose=(cam)=>[S.back('panel','panel',cam||'panelZ','덮개를 다시 덮어요.'),S.sIn(['v1','v2'],cam||'panelZ'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')];
+
+/* iron helpers */
+const iOpen=()=>[S.unplug(),S.sOut(['i1','i2'],'home','옆면 나사 두 개를 풀어요.'),S.away('icover','icover','home','위 덮개를 들어서 떼어 내요.')];
+const iClose=()=>[S.back('icover','icover','iin','덮개를 다시 덮어요.'),S.sIn(['i1','i2'],'home'),S.plugin(),S.on('dial','home','온도 손잡이를 돌려 봐요!')];
+const iFlip=()=>S.tap('lift','iron','home','다리미를 들어서 바닥판이 위로 오게 뒤집어요.',d=>tweenWorld(D.K,D.flipPose.p,D.flipPose.q,1.1,d));
+const iUnflip=()=>S.tap('down','iron','ibottom','다리미를 다시 바로 놓아요.',d=>tweenWorld(D.K,D.Khome,new W.Quaternion(),1.1,d));
+const iOn=()=>[S.plugin(),S.on('dial','home','온도 손잡이를 돌려 봐요!')];
 
 const MACH={
   dryer:{name:'헤어드라이기',icon:'dryer',build:buildDryer,stages:[
@@ -1272,7 +1350,7 @@ const MACH={
       S.cut('cordZ','탄 부분은 위험해요. 잘라 내요.'),S.strip('cordZ'),S.solderW('cordZ'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
     {title:'흡입력이 약해요',cause:'먼지통 필터가 꽉 막혀 있었어요',cfg:{filterdirt:true},steps:[S.unplug(),
       S.away('door','door','doorZ','먼지통 뚜껑을 열어요.'),
-      S.look('filterdirt','doorZ','필터를 가까이 봐요. 먼지가 꽉 찼어요.'),
+      S.look('filterdirt','doorZ','doorZ','필터를 가까이 봐요. 먼지가 꽉 찼어요.'),
       S.scrub('filterdirt',6,'doorZ','먼지를 솔로 털어 내요.'),
       S.back('door','door','doorZ','뚜껑을 닫아요.'),S.plugin(),S.on('btn','home','전원 버튼을 눌러 봐요!')]},
     {title:'쓰다가 뜨거워지며 뚝 꺼져요',cause:'모터 과열 안전 부품이 끊어졌었어요',cfg:{fuse:'bad'},box:'vfuse',steps:[...vPanelOpen(),
@@ -1292,6 +1370,35 @@ const MACH={
       S.scrub('swdirt',6,'panelZ','까만 때를 솔로 문질러요.'),
       S.test(['swA','swB'],true,'panelZ','다시 재 봐요.'),...vPanelClose()]},
   ]},
+  iron:{name:'전기다리미',icon:'press',build:buildIron,stages:[
+    {title:'아무리 기다려도 안 뜨거워요',cause:'온도를 지켜 주는 부품의 쇠 조각이 휘어서 안 닿았었어요',cfg:{thermo:'bad'},box:'ithermo',steps:[...iOpen(),
+      S.test(['thA','thB'],false,'iin','온도 조절 부품 양쪽 단자를 재요. '+TT),
+      S.look('thermo','thermoZ','iin','정한 온도가 되면 전기를 끊어 주는 부품이에요. 쇠 조각이 휘었네요.'),
+      S.trash('thermo','ithermo','thermoZ','휜 부품을 빼요.'),
+      S.insert('ithermo','home','새 부품을 끼워요.'),
+      S.test(['thA','thB'],true,'iin','다시 재 봐요.'),...iClose()]},
+    {title:'스팀이 안 나와요',cause:'바닥 구멍이 하얀 물때로 막혔었어요',cfg:{holes:true},box:'vinegar',steps:[S.unplug(),iFlip(),
+      S.look('holes','holeZ','ibottom','바닥 구멍을 가까이 봐요. 하얀 물때가 막았네요.'),
+      S.tap('drop','box','ibottom','부품 상자에서 식초를 꺼내 부어요. 물때가 녹아요.',d=>pourFromBox([0,1.7,.6],d)),
+      S.scrub('holes',6,'holeZ','녹은 물때를 문질러 닦아요.'),
+      iUnflip(),...iOn()]},
+    {title:'다리미 바닥으로 물이 새요',cause:'물통 아래 고무 패킹이 갈라졌었어요',cfg:{seal:'bad'},box:'iseal',steps:[S.unplug(),
+      S.away('tank','tank','tankZ','물통을 위로 빼요.'),
+      S.look('seal','sealZ','tankZ','물통이 앉는 자리의 둥근 고무를 봐요.'),
+      S.trash('seal','iseal','sealZ','딱딱해지고 갈라졌어요. 빼요.'),
+      S.insert('iseal','home','새 고무 패킹을 끼워요.'),
+      S.back('tank','tank','tankZ','물통을 다시 꽂아요.'),...iOn()]},
+    {title:'선을 꺾으면 꺼졌다 켜졌다 해요',cause:'뒤쪽 선이 자꾸 꺾여서 속이 끊어졌었어요',cfg:{cord:true},steps:[...iOpen(),
+      S.test(['icA','icB'],false,'iin','선 들어오는 곳과 반대쪽 끝을 재요. '+TT),
+      S.look('wfix','cordZ','iin','뒤쪽 선을 가까이 봐요.'),
+      S.cut('cordZ','속이 끊어져 까맣게 탔어요. 상한 부분을 잘라 내요.'),S.strip('cordZ'),S.solderW('cordZ'),
+      S.test(['icA','icB'],true,'iin','다시 재 봐요.'),...iClose()]},
+    {title:'바닥이 끈적해서 옷이 안 밀려요',cause:'바닥판에 녹은 섬유가 눌어붙었었어요',cfg:{burn:true},steps:[S.unplug(),iFlip(),
+      S.diagnose('바닥판 눌은 때',['바닥판 눌은 때','온도 조절 부품','물통 고무 패킹'],'ibottom','바닥이 끈적해서 옷이 안 밀려요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('burn','burnZ','ibottom','바닥판을 가까이 봐요. 뭔가 눌어붙었어요.'),
+      S.scrub('burn',7,'burnZ','식초 묻힌 천으로 문질러 벗겨 내요.'),
+      iUnflip(),...iOn()]},
+  ]},
 };
 const MKEYS=Object.keys(MACH);
 
@@ -1304,7 +1411,7 @@ function fillBox(kind){
   if(kind==='oil')o=bottle('#e8c34a');
   else if(kind==='vinegar')o=bottle('#e8f0f2');
   else{const keep=Object.assign({},anchors);o=D.slots[kind].make('new');anchors=keep;
-    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8,mwsw:1.3,mwfuse:1.3,mag:.8,tfuse:1.3,latch:1.2,theater:.9,vfuse:1.3}[kind]||1;o.scale.setScalar(sc);}
+    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8,mwsw:1.3,mwfuse:1.3,mag:.8,tfuse:1.3,latch:1.2,theater:.9,vfuse:1.3,ithermo:1.2,iseal:.9}[kind]||1;o.scale.setScalar(sc);}
   o.traverse(m=>{if(m.isMesh){m.userData.id='box';pick.push(m);}});
   boxContent.add(o);
 }
