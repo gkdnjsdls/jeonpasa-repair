@@ -219,6 +219,7 @@ const IC={
   remote:'<rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="6" r="1.2"/><path d="M10.5 11h3M10.5 14h3M10.5 17h3"/>',
   microwave:'<rect x="2" y="4" width="20" height="16" rx="2"/><rect x="4.5" y="7" width="11" height="10" rx="1"/><circle cx="19" cy="9" r=".6"/><circle cx="19" cy="12" r=".6"/><path d="M17 15.5h4"/>',
   toaster:'<rect x="3" y="9" width="16" height="11" rx="2"/><path d="M7 9V5M12 9V5"/><rect x="18.5" y="12" width="3" height="5" rx="1"/>',
+  fridge:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 9.5h14"/><path d="M8.5 5v2.5M8.5 12v3"/>',
   press:'<path d="M2 20h20"/><path d="M3 17c0-5 4-7 9-7h8v5a2 2 0 01-2 2z"/><path d="M8 10V8a4 4 0 017-1"/>',
   vacuum:'<path d="M12 2v9"/><circle cx="12" cy="2" r="1.2"/><path d="M7 20h10l-1.2-7H8.2z"/><circle cx="9" cy="20.5" r="1.3"/><circle cx="15" cy="20.5" r="1.3"/>',
   phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="6" r="1.5"/>',
@@ -997,6 +998,83 @@ function buildIron(cfg){
   return d;
 }
 
+/* ================= FRIDGE ================= */
+function makeFGasket(bad){
+  const g=new W.Group(),WX=.62,HY=.92,t=.09,col=mat(bad?'#8a7a5a':'#e1e4df',{roughness:.9});
+  const bar=(w,h,p,r)=>M_(new W.BoxGeometry(w,h,.07),col,g,p,r);
+  bar(WX*2,t,[0,HY,0]);bar(WX*2,t,[0,-HY,0]);bar(t,HY*2,[-WX,0,0]);
+  if(bad){bar(t,HY*1.1,[WX,-.37,0]);M_(new W.BoxGeometry(.07,.5,.05),mat('#5a4a30'),g,[WX,.5,.02],[0,0,.3]);}
+  else bar(t,HY*2,[WX,0,0]);
+  tag(g,'fgasket');anchor(g,'fgasket',[0,0,.12]);return g;
+}
+function makeColdFan(bad){
+  const g=new W.Group();
+  M_(new W.BoxGeometry(.46,.46,.06),mat('#3a4046'),g);
+  M_(cyl(.18,.18,.05,20),mat(bad?'#5a5550':'#cfd6da',{metalness:.4}),g,[0,0,.05],[PI/2,0,0]);
+  const hub=new W.Group();hub.position.set(0,0,.09);g.add(hub);
+  for(let i=0;i<4;i++)M_(new W.BoxGeometry(.3,.09,.02),mat(bad?'#6b6560':'#eceff1'),hub,[0,0,0],[0,0,i*PI/2+.35]);
+  M_(cyl(.06,.06,.06,12),mat('#2b2e33'),hub,[0,0,.02],[PI/2,0,0]);
+  if(bad)M_(new W.SphereGeometry(.07,10,8),mat('#1f150c'),g,[.12,-.13,.04]).scale.set(1.2,.6,.6);
+  tag(g,'ffan');anchor(g,'ffan',[0,.32,.12]);return g;
+}
+function buildFridge(cfg){
+  const d=newD(V(-.6,-1.06,-.72)),R=d.root;
+  const BODY='#eef1f2',IN='#dfe6e8',DARK='#2b2e33';
+  /* 몸통: 문 쪽(앞)은 면을 아예 안 만들어서, 문을 열면 안이 실제로 뚫려 보인다 */
+  M_(new W.BoxGeometry(1.5,.05,1.2),mat(BODY),R,[0,1.1,0]);
+  M_(new W.BoxGeometry(1.5,.05,1.2),mat(BODY),R,[0,-1.08,0]);
+  M_(new W.BoxGeometry(.05,2.2,1.2),mat(BODY),R,[-.75,0,0]);
+  M_(new W.BoxGeometry(.05,2.2,1.2),mat(BODY),R,[.75,0,0]);
+  M_(new W.BoxGeometry(1.5,2.2,.05),mat(IN),R,[0,0,-.6]);
+  M_(new W.BoxGeometry(1.44,.04,1.1),mat(IN),R,[0,.3,.02]);   /* 냉동실/냉장실 칸막이 */
+  M_(new W.BoxGeometry(1.3,.03,.9),mat('#cfd6da',{transparent:true,opacity:.55}),R,[0,-.42,.05]);
+  M_(cyl(.2,.2,.3,18),mat(DARK),R,[.35,-.9,-.78],[0,0,PI/2]);  /* 기계실 압축기 */
+  /* 뒤쪽 방열판 */
+  const bk=new W.Group();bk.position.set(0,-.1,-.66);R.add(bk);
+  for(let i=0;i<7;i++)M_(new W.BoxGeometry(1.2,.025,.025),mat('#4a5055'),bk,[0,-.5+i*.17,0]);
+  [-.6,.6].forEach(x=>M_(new W.BoxGeometry(.035,1.15,.025),mat('#4a5055'),bk,[x,0,0]));
+  if(cfg.coildirt)dirt(bk,'coildirt',new W.BoxGeometry(1.24,1.0,.03),'#6b5a3a',[0,0,-.045],[0,0,0],.6);
+  /* 안쪽 바닥 물 빠지는 구멍 */
+  M_(cyl(.1,.1,.03,16),mat('#aeb6ba'),R,[0,-1.05,-.42]);
+  M_(cyl(.06,.06,.04,14),mat('#20262a'),R,[0,-1.045,-.42]);
+  if(cfg.drain){
+    M_(new W.BoxGeometry(1.2,.05,.7),mat('#9fd8ea',{transparent:true,opacity:.6}),R,[0,-1.02,-.1]);
+    const c1=M_(new W.SphereGeometry(.055,10,8),mat('#5a4a30'),R,[0,-1.02,-.42]);tag(c1,'h1');anchor(R,'h1',[0,-.92,-.42]);
+    const c2=M_(new W.SphereGeometry(.045,10,8),mat('#6b5a3a'),R,[-.09,-1.03,-.35]);tag(c2,'h2');anchor(R,'h2',[-.09,-.93,-.35]);
+    d.hair=[c1,c2];
+  }
+  if(cfg.defrost==='bad')[[-.42,.4,-.28],[.32,.44,-.18],[-.08,.38,-.42]].forEach(p=>M_(new W.BoxGeometry(.32,.1,.26),mat('#dcf0f8',{roughness:1}),R,p));
+  /* 냉동실 뒤 덮개 + 그 뒤의 제상 히터·찬바람 팬 */
+  const cv=new W.Group();cv.position.set(0,.68,-.46);R.add(cv);
+  M_(new W.BoxGeometry(1.3,.64,.04),mat('#e7ecee'),cv);
+  for(let i=-2;i<=2;i++)M_(new W.BoxGeometry(.9,.02,.02),mat('#cfd6da'),cv,[0,i*.12,.03]);
+  tag(cv,'fcov');anchor(cv,'fcov',[0,-.1,.25]);
+  screwAt(cv,'rf1',[-.52,-.22,.025],[0,0,1]);screwAt(cv,'rf2',[.52,-.22,.025],[0,0,1]);
+  d.mov.fcov={get:()=>cv,p:[-2.4,-.85,1.6],e:[0,0,0]};
+  slot('fdefrost',R,[-.1,.46,-.54],[0,0,0],s=>capsule(s==='bad','dfA','dfB','fdefrost',.5),cfg.defrost||'ok');
+  slot('ffan',R,[.4,.88,-.54],[0,0,0],s=>makeColdFan(s==='bad'),cfg.fan||'ok');
+  /* 문 */
+  const dp=new W.Group();dp.position.set(-.75,0,.6);R.add(dp);d.door=dp;
+  M_(new W.BoxGeometry(1.5,2.2,.09),mat(BODY),dp,[.75,0,.045]);
+  M_(new W.BoxGeometry(1.32,1.96,.02),mat(IN),dp,[.75,0,-.01]);
+  M_(cyl(.032,.032,1.1,10),mat('#9aa5ab',{metalness:.6}),dp,[1.35,.3,.14]);
+  tag(dp,'fdoor');anchor(dp,'fdoor',[1.2,.95,.2]);
+  const kb=new W.Group();kb.position.set(1.12,-.72,.1);dp.add(kb);
+  M_(cyl(.12,.12,.06,18),mat(DARK),kb,[0,0,0],[PI/2,0,0]);
+  M_(new W.BoxGeometry(.025,.1,.02),mat('#e9914c'),kb,[0,.05,.04]);
+  d.knob=kb;tag(kb,'fdial');anchor(dp,'fdial',[1.12,-.54,.14]);
+  d.led=M_(new W.SphereGeometry(.03,10,8),mat('#3a1a10'),dp,[.82,-.72,.1]);
+  slot('fgasket',dp,[.75,0,-.055],[0,0,0],s=>makeFGasket(s==='bad'),cfg.gasket||'ok');
+  d.cams={home:[[1.7,1.3,6.4],[0,0,.1]],inside:[[1.9,.9,4.2],[0,-.1,0]],
+    gasketZ:[[1.1,.3,2.2],[-.94,0,1.33]],drainZ:[[.3,-.3,2.0],[0,-1.0,-.3]],
+    coilZ:[[0,.1,-3.5],[0,-.15,-.66]],bayZ:[[.4,1.4,2.7],[0,.68,-.3]],
+    defZ:[[.2,.8,1.7],[-.1,.46,-.5]],fanZ:[[.5,1.3,1.6],[.4,.88,-.5]]};
+  d.turnOn=done=>tween(.6,e=>{d.knob.rotation.z=-2.0*e;},()=>{
+    d.led.material.userData.keepE=true;d.led.material.color.set('#5fe08f');d.led.material.emissive.set('#2fbf6a');done();});
+  d.spin=null;
+  d.emit={p:V(0,-1.0,.62),dir:V(0,-.25,1),spread:.5,speed:.8,colors:[0xbfe6ff,0xe8f6ff],grow:4};
+  return d;
+}
 /* ================= tweens & movement ================= */
 const tweens=[];
 const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
@@ -1122,6 +1200,13 @@ const iClose=()=>[S.back('icover','icover','iin','덮개를 다시 덮어요.'),
 const iFlip=()=>S.tap('lift','iron','home','다리미를 들어서 바닥판이 위로 오게 뒤집어요.',d=>tweenWorld(D.K,D.flipPose.p,D.flipPose.q,1.1,d));
 const iUnflip=()=>S.tap('down','iron','ibottom','다리미를 다시 바로 놓아요.',d=>tweenWorld(D.K,D.Khome,new W.Quaternion(),1.1,d));
 const iOn=()=>[S.plugin(),S.on('dial','home','온도 손잡이를 돌려 봐요!')];
+
+/* fridge helpers */
+const rfDoor=()=>S.tap('lift','fdoor','home','문을 열어요.',d=>tween(.8,e=>{D.door.rotation.y=-1.9*e;},d));
+const rfShut=()=>S.tap('down','fdoor','home','문을 닫아요.',d=>tween(.8,e=>{D.door.rotation.y=-1.9*(1-e);},d));
+const rfOn=()=>[S.plugin(),S.on('fdial','home','문에 있는 온도 손잡이를 돌려 봐요!')];
+const rfBayOpen=()=>[S.unplug(),rfDoor(),S.sOut(['rf1','rf2'],'bayZ','냉동실 뒤 덮개 나사 두 개를 풀어요.'),S.away('fcov','fcov','bayZ','뒤 덮개를 떼어 내요.')];
+const rfBayClose=()=>[S.back('fcov','fcov','bayZ','뒤 덮개를 다시 덮어요.'),S.sIn(['rf1','rf2'],'bayZ'),rfShut(),...rfOn()];
 
 const MACH={
   dryer:{name:'헤어드라이기',icon:'dryer',build:buildDryer,stages:[
@@ -1399,6 +1484,31 @@ const MACH={
       S.scrub('burn',7,'burnZ','식초 묻힌 천으로 문질러 벗겨 내요.'),
       iUnflip(),...iOn()]},
   ]},
+  fridge:{name:'냉장고',icon:'fridge',build:buildFridge,stages:[
+    {title:'문이 잘 안 닫히고 옆이 미지근해요',cause:'문 테두리 고무가 낡아 갈라져서 찬 바람이 샜어요',cfg:{gasket:'bad'},box:'fgasket',steps:[S.unplug(),rfDoor(),
+      S.look('fgasket','gasketZ','inside','문 안쪽 테두리 고무를 봐요. 찬 바람이 새지 않게 막아 줘요.'),
+      S.trash('fgasket','fgasket','gasketZ','딱딱해지고 한쪽이 갈라졌어요. 빼요.'),
+      S.insert('fgasket','home','새 고무 테두리를 끼워요.'),
+      rfShut(),...rfOn()]},
+    {title:'뒤가 뜨겁고 냉기가 약해요',cause:'뒤쪽 열 내보내는 그물에 먼지가 수북이 쌓였었어요',cfg:{coildirt:true},steps:[S.unplug(),
+      S.look('coildirt','coilZ','coilZ','냉장고 뒤 쇠 그물을 봐요. 여기로 열을 내보내요.'),
+      S.scrub('coildirt',6,'coilZ','먼지가 열을 막아서 안이 안 차가워요. 솔로 털어 내요.'),...rfOn()]},
+    {title:'안쪽 바닥에 물이 고여요',cause:'녹은 물이 빠지는 구멍이 막혀 있었어요',cfg:{drain:true},steps:[S.unplug(),rfDoor(),
+      S.look('h1','drainZ','inside','안쪽 바닥 뒤 구석의 작은 구멍을 봐요. 녹은 물이 여기로 빠져요.'),
+      S.picks(['h1','h2'],'drainZ','구멍을 막은 덩어리를 하나씩 뽑아내요.'),
+      rfShut(),...rfOn()]},
+    {title:'냉동실에 성에가 두껍게 껴요',cause:'성에를 녹여 주는 부품이 끊어졌었어요',cfg:{defrost:'bad'},box:'fdefrost',steps:[...rfBayOpen(),
+      S.test(['dfA','dfB'],false,'defZ','기다란 막대 부품 양쪽을 재요. '+TT),
+      S.look('fdefrost','defZ','defZ','하루에 몇 번 살짝 데워서 성에를 녹여 주는 부품이에요.'),
+      S.trash('fdefrost','fdefrost','defZ','끊어졌어요. 빼요.'),
+      S.insert('fdefrost','home','새 부품을 끼워요.'),
+      S.test(['dfA','dfB'],true,'defZ','다시 재 봐요.'),...rfBayClose()]},
+    {title:'냉동실은 찬데 냉장실이 안 차가워요',cause:'찬바람을 아래로 보내 주는 팬이 멈춰 있었어요',cfg:{fan:'bad'},box:'ffan',steps:[...rfBayOpen(),
+      S.diagnose('찬바람 팬',['찬바람 팬','문 테두리 고무','뒤쪽 그물 먼지'],'bayZ','냉동실은 찬데 냉장실이 안 차가워요. 뭐가 문제일까요? 수상한 걸 골라봐요.'),
+      S.look('ffan','fanZ','bayZ','팬을 가까이 봐요. 축이 타서 안 돌아요.'),
+      S.trash('ffan','ffan','fanZ','멈춘 팬을 빼요.'),
+      S.insert('ffan','home','새 팬을 끼워요.'),...rfBayClose()]},
+  ]},
 };
 const MKEYS=Object.keys(MACH);
 
@@ -1411,12 +1521,12 @@ function fillBox(kind){
   if(kind==='oil')o=bottle('#e8c34a');
   else if(kind==='vinegar')o=bottle('#e8f0f2');
   else{const keep=Object.assign({},anchors);o=D.slots[kind].make('new');anchors=keep;
-    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8,mwsw:1.3,mwfuse:1.3,mag:.8,tfuse:1.3,latch:1.2,theater:.9,vfuse:1.3,ithermo:1.2,iseal:.9}[kind]||1;o.scale.setScalar(sc);}
+    const sc={heater:.4,motor:.7,fuse:1.3,cap:1.2,mfuse:1.3,blade:.35,disc:1.2,swmod:1.3,rfuse:1.3,gasket:.35,xtal:2,bat:.8,mwsw:1.3,mwfuse:1.3,mag:.8,tfuse:1.3,latch:1.2,theater:.9,vfuse:1.3,ithermo:1.2,iseal:.9,fgasket:.4,fdefrost:.9}[kind]||1;o.scale.setScalar(sc);}
   o.traverse(m=>{if(m.isMesh){m.userData.id='box';pick.push(m);}});
   boxContent.add(o);
 }
 function startStage(mk,n){
-  if(D){scene.remove(D.root);}
+  if(D){scene.remove(D.root);Object.values(D.mov).forEach(m=>{const o=m.get();if(o.parent===scene)scene.remove(o);});}
   pick=ENV_PICK.slice();anchors=Object.assign({},ENV_ANCH);
   G.mk=mk;G.n=n;const st=MACH[mk].stages[n];
   MACH[mk].build(st.cfg);
